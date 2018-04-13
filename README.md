@@ -42,17 +42,16 @@ The bot can be configured by adding a .mention-bot file to the base directory of
 
 ```
 {
-    "findPotentialReviewers": true,
-    "fileBlacklist": [],
-    "actions": [
-        "open" // open, close, update
-    ],
-    "createComment": true,
-    "numFilesToCheck": 5,
-    "skipAlreadyAssignedMR": false,
-    "skipWIP": true,
-    "maxReviewers": 3,
-    "userBlacklist": []
+    'userBlacklist': [],
+    'fileBlacklist': [],
+    'maxReviewers': 3,
+    'findPotentialReviewers': True,
+    'numFilesToCheck': 5,
+    'createComment': True,
+    'actions': ['open'],
+    'skipWIP': True,
+    'skipAlreadyAssignedMR': False,
+    'skipAlreadyMentionedMR': True,
 }
 ```
 
