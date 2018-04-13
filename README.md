@@ -20,7 +20,7 @@ Set your gitlab environment variables
 
 ```
 export GITLAB_URL=<gitlab_addr>
-export GITLAB_USER=<gitlab_username>
+export GITLAB_USERNAME=<gitlab_username>
 export GITLAB_PASSWORD=<gitlab_password>
 export GITLAB_TOKEN=<gitlab_token>
 ```
