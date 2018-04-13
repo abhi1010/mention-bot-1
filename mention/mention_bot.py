@@ -19,7 +19,19 @@ logger = logging.getLogger(__name__)
 RE_DIFF_LINE_NO = re.compile(r'\@\@ -(\d+),?(\d+)? \+(\d+),?(\d+)? \@\@')
 RE_BLAME_OR_NO = re.compile(r'(<a href="\/([\w\-0-9]+)"><img class="avatar|<a class="diff-line-num")')
 
-
+_DEFAULT_CONFIG = {
+    'findPotentialReviewers': True,
+    'fileBlacklist': [],
+    'actions': [
+        'open', 'reopen'
+        ],
+    'createComment': True,
+    'numFilesToCheck': 5,
+    'skipAlreadyAssignedMR': False,
+    'skipWIP': True,
+    'maxReviewers': 2,
+    'userBlacklist': []
+}
 class BotConfig(object):
     default_config = {
         'userBlacklist': [],
@@ -193,6 +205,9 @@ def add_comment(project_id, merge_request_id, creator, reviewers, config):
     By analyzing the history of the files in this pull request,
     we identified {1} to be potential reviewers."""
     reviewers_mentions = map(lambda r: '@' + str(r), reviewers)
+    if not reviewers_mentions:
+        logger.info('No valid reviewers. Ignoring')
+        return False
     note = msg.format(creator, ' and '.join(reviewers_mentions))
     if config.skipAlreadyMentionedMR and\
        has_mention_comment(project_id, merge_request_id, note):
@@ -204,7 +219,7 @@ def get_repo_config(project_id, target_branch, config_path):
     filecontent = get_project_file(project_id, target_branch, config_path)
     if not filecontent:
         logger.warning("Unable to find config file, use default config instead.")
-        return BotConfig.from_dict({})
+        return BotConfig.from_dict(_DEFAULT_CONFIG)
     try:
         config = json.loads(filecontent)
         return BotConfig.from_dict(config)

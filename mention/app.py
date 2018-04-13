@@ -68,7 +68,7 @@ def webhook():
 
 def main():
     check_config()
-    app.run()
+    app.run(host='0.0.0.0')
 
 
 if __name__ == '__main__':
