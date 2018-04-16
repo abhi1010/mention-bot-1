@@ -20,7 +20,7 @@ Set your gitlab environment variables
 
 ```
 export GITLAB_URL=<gitlab_addr>
-export GITLAB_USER=<gitlab_username>
+export GITLAB_USERNAME=<gitlab_username>
 export GITLAB_PASSWORD=<gitlab_password>
 export GITLAB_TOKEN=<gitlab_token>
 ```
@@ -42,17 +42,16 @@ The bot can be configured by adding a .mention-bot file to the base directory of
 
 ```
 {
-    "findPotentialReviewers": true,
-    "fileBlacklist": [],
-    "actions": [
-        "open" // open, close, update
-    ],
-    "createComment": true,
-    "numFilesToCheck": 5,
-    "skipAlreadyAssignedMR": false,
-    "skipWIP": true,
-    "maxReviewers": 3,
-    "userBlacklist": []
+    'userBlacklist': [],
+    'fileBlacklist': [],
+    'maxReviewers': 3,
+    'findPotentialReviewers': True,
+    'numFilesToCheck': 5,
+    'createComment': True,
+    'actions': ['open'],
+    'skipWIP': True,
+    'skipAlreadyAssignedMR': False,
+    'skipAlreadyMentionedMR': True,
 }
 ```
 
