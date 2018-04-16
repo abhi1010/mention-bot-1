@@ -1,0 +1,36 @@
+{
+    "findPotentialReviewers": true,
+    "fileBlacklist": [],
+    "actions": [
+        "open", "reopen"
+    ],
+    "createComment": true,
+    "numFilesToCheck": 5,
+    "skipAlreadyAssignedMR": false,
+    "skipWIP": true,
+    "maxReviewers": 3,
+    "userBlacklist": [],
+    "labels": {
+      "fpga/": "fpga",
+      "alice/": "old-alice",
+      "pyapp/chewy": "chewy",
+      "ccgh/": "ccgh",
+      "vendor": "vendor",
+      "protobuf": "protobuf",
+      "pyapp/risk": "risk",
+      "pylib": "pylib",
+      "risk/": "alice2",
+      "jsgh": "alice2"
+    },
+    "labelNotifications": {
+      "fpga": "#slak",
+      "old-alice": "#slak",
+      "chewy": "#slak",
+      "ccgh": "#slak",
+      "vendor": "#slak",
+      "protobuf": "#slak",
+      "risk": "#slak",
+      "pylib": "#slak",
+      "alice2": "#slak"
+    }
+}
