@@ -25,7 +25,7 @@ def check_health():
 
 @app.route('/', methods=['GET'])
 def mentionbot():
-    return "Gitlab Mention Bot avtive"
+    return "Gitlab Mention Bot active"
 
 
 @app.route('/', methods=['POST'])
@@ -48,19 +48,10 @@ def webhook():
         if not is_valid(config, payload):
             # skip
             return "", 200
-        owners = guess_owners_for_merge_reqeust(project_id,
-                                                namespace,
-                                                target_branch,
-                                                merge_request_id,
-                                                username,
-                                                config)
-        add_comment(
-            project_id,
-            merge_request_id,
-            username,
-            owners,
-            config
-        )
+        owners = guess_owners_for_merge_reqeust(
+            project_id, namespace, target_branch, merge_request_id, username,
+            config)
+        add_comment(project_id, merge_request_id, username, owners, config)
     except ConfigSyntaxError as e:
         add_comment_merge_request(project_id, merge_request_id, e.message)
     return "", 200
@@ -68,7 +59,7 @@ def webhook():
 
 def main():
     check_config()
-    app.run()
+    app.run(host='0.0.0.0')
 
 
 if __name__ == '__main__':
