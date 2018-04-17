@@ -48,10 +48,10 @@ The bot can be configured by adding a .mention-bot file to the base directory of
     'findPotentialReviewers': True,
     'numFilesToCheck': 5,
     'createComment': True,
-    'actions': ['open'],
+    'actions': ['open', 'reopen'], // open, close, update
     'skipWIP': True,
     'skipAlreadyAssignedMR': False,
-    'skipAlreadyMentionedMR': True,
+    'skipAlreadyMentionedMR': True
 }
 ```
 
