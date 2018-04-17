@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 import os
+import json
 import logging
 import logging.config
 
@@ -35,6 +36,15 @@ logging.config.dictConfig({
         'handlers': ['console']
     }
 })
+
+
+def get_default_config():
+    file_path = 'sample-mention-bot.json'
+    with open(file_path, 'rt') as file_placeholder:
+        lines = file_placeholder.readlines()
+        text = ''.join(lines)
+        config_as_dict = json.loads(text)
+        return config_as_dict
 
 
 def check_config():
