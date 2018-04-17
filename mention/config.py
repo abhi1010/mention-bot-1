@@ -10,8 +10,9 @@ GITLAB_URL = os.getenv('GITLAB_URL')
 GITLAB_TOKEN = os.getenv('GITLAB_TOKEN')
 GITLAB_USERNAME = os.getenv('GITLAB_USERNAME')
 GITLAB_PASSWORD = os.getenv('GITLAB_PASSWORD')
+SLACK_TOKEN = os.getenv(
+    'SLACK_TOKEN') or 'xoxb-18734302050-7Aa4j8DaPYwAKvzSWrczVJ0o'
 CONFIG_PATH = '.mention-bot'
-
 
 logging.config.dictConfig({
     'version': 1,
@@ -38,12 +39,21 @@ logging.config.dictConfig({
 
 def check_config():
     if not GITLAB_URL:
-        logger.error("No Gitlab address detected, please expose GITLAB_URL as environment variables.")
+        logger.error(
+            "No Gitlab address detected, please expose GITLAB_URL as environment variables."
+        )
         exit(1)
     if not GITLAB_USERNAME or not GITLAB_PASSWORD:
-        logger.error("No Gitlab account detected, please expose GITLAB_USERNAME and GITLAB_PASSWORD as environment variables.")
+        logger.error(
+            "No Gitlab account detected, please expose GITLAB_USERNAME and GITLAB_PASSWORD as environment variables."
+        )
         exit(1)
     if not GITLAB_TOKEN:
-        logger.error("goto Profile Settings -> Access Token -> Create Personal Access Token")
+        logger.error(
+            "goto Profile Settings -> Access Token -> Create Personal Access Token"
+        )
         logger.error("append GITLAB_TOKEN= before start command.")
+    if not SLACK_TOKEN:
+        logger.error("Create a valid slack token first.")
+        logger.error("append SLACK_TOKEN= before start command.")
         exit(1)
