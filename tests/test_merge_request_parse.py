@@ -15,18 +15,14 @@ from mention.mention_bot import add_comment
 
 
 class TestMergeRequestParse(unittest.TestCase):
-
-    @mock.patch('mention.mention_bot.has_mention_comment')
+    @mock.patch('mention.utils.has_mention_comment')
     def test_add_comment(self, has_mention_comment):
         has_mention_comment.return_value = True
         project_id = 1
         merge_request_id = 1
-        config = BotConfig.from_dict({
-            'skipAlreadyMentionedMR': True
-        })
+        config = BotConfig.from_dict({'skipAlreadyMentionedMR': True})
         self.assertFalse(
-            add_comment(project_id, merge_request_id, 'ck', [], config)
-        )
+            add_comment(project_id, merge_request_id, 'ck', [], config))
 
     def test_parse_diff_file(self):
         with open('tests/data/test.diff') as f:
@@ -48,14 +44,9 @@ class TestMergeRequestParse(unittest.TestCase):
         files = [
             ('test.py', [1, 2, 3]),
         ]
-        blames = {
-            'test.py': ['ck', 'iven', 'ck', 'fsp']
-        }
+        blames = {'test.py': ['ck', 'iven', 'ck', 'fsp']}
         owners = get_deleted_owners(files, blames)
-        assert owners == {
-            'ck': 2,
-            'iven': 1
-        }
+        assert owners == {'ck': 2, 'iven': 1}
         all_owners = get_all_owners(files, blames)
         assert all_owners == {
             'ck': 2,
@@ -64,11 +55,7 @@ class TestMergeRequestParse(unittest.TestCase):
         }
 
     def test_sort_owners(self):
-        owners = {
-            'ck': 1,
-            'fsp': 2,
-            'iven': 3
-        }
+        owners = {'ck': 1, 'fsp': 2, 'iven': 3}
         self.assertEqual(sort_owners(owners), ['iven', 'fsp', 'ck'])
 
     @mock.patch('mention.mention_bot.get_deleted_owners')
@@ -87,9 +74,7 @@ class TestMergeRequestParse(unittest.TestCase):
             'none': 80,
         }
         creator = 'ck'
-        config = BotConfig.from_dict({
-            'userBlacklist': ['amy']
-        })
+        config = BotConfig.from_dict({'userBlacklist': ['amy']})
         owners = guess_owners([], [], creator, config)
         self.assertEqual(owners, ['wen', 'xiaofeng', 'iven'])
 
@@ -103,10 +88,8 @@ class TestMergeRequestParse(unittest.TestCase):
         ]
         fileBlackList = ['*.md', '*.json']
         files = filter_files(files, fileBlackList, 2)
-        self.assertEqual(files, [
-            ('b.py', [1, 2, 3, 5, 6]),
-            ('xx.py', [234, 456, 789])
-        ])
+        self.assertEqual(files, [('b.py', [1, 2, 3, 5, 6]), ('xx.py',
+                                                             [234, 456, 789])])
 
     def test_config(self):
         config = BotConfig.from_dict({
@@ -114,7 +97,7 @@ class TestMergeRequestParse(unittest.TestCase):
         })
         self.assertEqual(config.maxReviewers, 10)
         self.assertEqual(config.createComment, True)
-        self.assertEqual(config.actions, ['open'])
+        self.assertEqual(config.actions, ['open', 'reopen'])
 
     @unittest.skip
     def test_gitlab_login(self):
@@ -123,7 +106,7 @@ class TestMergeRequestParse(unittest.TestCase):
         authors = parse_blame(blame)
         self.fail(authors)
 
-    @mock.patch('mention.mention_bot.get_project_file')
+    @mock.patch('mention.utils.get_project_file')
     def test_get_repo_config_default(self, get_project_file):
         get_project_file.return_value = False
         config = get_repo_config(90, 'master', '.mention_bot')
@@ -133,9 +116,7 @@ class TestMergeRequestParse(unittest.TestCase):
         self.assertEqual(config.maxReviewers, 5)
 
     def test_is_valid(self):
-        config = BotConfig.from_dict({
-            'actions': ['open', 'merge']
-        })
+        config = BotConfig.from_dict({'actions': ['open', 'merge']})
         with open('tests/data/merge_request_event.json') as f:
             data = json.loads(f.read())
         data['object_attributes']['action'] = 'open'
