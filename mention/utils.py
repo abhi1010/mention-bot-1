@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 import re
 import logging
+import pprint
 
 import requests
 from gitlab import Gitlab
@@ -10,9 +11,7 @@ from gitlab import Gitlab
 from mention.config import GITLAB_URL, GITLAB_TOKEN
 from mention.config import GITLAB_USERNAME, GITLAB_PASSWORD
 
-
 logger = logging.getLogger(__name__)
-
 
 session = requests.Session()
 _gitlab_client = None
@@ -26,11 +25,50 @@ class ConfigSyntaxError(Exception):
     pass
 
 
+def get_pretty_print(item, depth=None):
+    pp = pprint.PrettyPrinter(indent=4, depth=depth)
+    return pp.pformat(item)
+
+
+PP = lambda x: get_pretty_print(x)
+
+
+def get_channels_based_on_labels(cfg, labels):
+    labels = labels or ['']
+    channels = list(
+        set([y for x, y in cfg.labelNotifications.items() if x in labels]))
+    return channels
+
+
+def get_labels(cfg, files):
+    labels_to_add = []
+    files_to_use = [x[0] for x in files]
+    for file in files_to_use:
+        for path, label in cfg.labels.items():
+            if file.startswith(path):
+                labels_to_add.append(label)
+    return sorted([x.encode('utf-8') for x in list(set(labels_to_add))])
+
+
 def get_gitlab_client():
     global _gitlab_client
     if _gitlab_client is None:
         _gitlan_client = Gitlab(GITLAB_URL, token=GITLAB_TOKEN)
     return _gitlan_client
+
+
+def update_labels(project_id, merge_request_id, labels):
+    client = get_gitlab_client()
+    res = client.updatemergerequest(
+        project_id, merge_request_id, labels=labels)
+    print('merge_request= {}; dir={}'.format(res, dir(res)))
+    return 'kk'
+
+
+def get_merge_request_labels(project_id, merge_request_id):
+    client = get_gitlab_client()
+    merge_request = client.getmergerequest(project_id, merge_request_id)
+    return merge_request.labels()
 
 
 def get_merge_request_diff(project_id, merge_request_id):
@@ -45,9 +83,8 @@ def has_mention_comment(project_id, merge_request_id, comment):
     page = 1
     per_page = 20
     while has_next:
-        comments = client.getmergerequestcomments(project_id, merge_request_id,
-                                                  page=page,
-                                                  per_page=per_page)
+        comments = client.getmergerequestcomments(
+            project_id, merge_request_id, page=page, per_page=per_page)
         for item in comments:
             if item['note'] == comment:
                 return True
@@ -69,8 +106,7 @@ def add_comment_merge_request(project_id, merge_request_id, note):
 def _search_authenticity_token(html):
     matched = re.search(
         r'<input type="hidden" name="authenticity_token" value="(.*)" />',
-        html
-    )
+        html)
     if not matched:
         raise GitlabError("Fetch login page failed.")
     return matched.group(1)
@@ -91,8 +127,8 @@ def login():
         'authenticity_token': authenticity_token,
         'utf8': u'√',
     }
-    return session.post(login_url, headers=headers, data=data,
-                        allow_redirects=False)
+    return session.post(
+        login_url, headers=headers, data=data, allow_redirects=False)
 
 
 def setup_cookie():
@@ -103,7 +139,8 @@ def setup_cookie():
 def fetch_blame(namespace, target_branch, path):
     setup_cookie()
     try:
-        url = '%s/%s/blame/%s/%s' % (GITLAB_URL, namespace, target_branch, path)
+        url = '%s/%s/blame/%s/%s' % (GITLAB_URL, namespace, target_branch,
+                                     path)
         response = session.get(url)
         response.raise_for_status()
     except requests.HTTPError:

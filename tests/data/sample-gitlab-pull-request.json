@@ -1,0 +1,129 @@
+{
+    "object_kind": "merge_request",
+    "user": {
+        "name": "Abhishek Pandey",
+        "username": "abhishek.pandey",
+        "avatar_url": "http://gitlab.grass.corp/uploads/-/system/user/avatar/39/1782360_1506666456275410_2156797767601194079_o.jpg"
+    },
+    "project": {
+        "id": 321,
+        "name": "higgs",
+        "description": "",
+        "web_url": "http://gitlab.grass.corp/abhishek.pandey/higgs",
+        "avatar_url": "http://gitlab.grass.corp/uploads/-/system/project/avatar/321/fig_01_higgs_cropped.png",
+        "git_ssh_url": "gitolite@gitlab.grass.corp:abhishek.pandey/higgs.git",
+        "git_http_url": "http://gitlab.grass.corp/abhishek.pandey/higgs.git",
+        "namespace": "abhishek.pandey",
+        "visibility_level": 0,
+        "path_with_namespace": "abhishek.pandey/higgs",
+        "default_branch": "master",
+        "ci_config_path": null,
+        "homepage": "http://gitlab.grass.corp/abhishek.pandey/higgs",
+        "url": "gitolite@gitlab.grass.corp:abhishek.pandey/higgs.git",
+        "ssh_url": "gitolite@gitlab.grass.corp:abhishek.pandey/higgs.git",
+        "http_url": "http://gitlab.grass.corp/abhishek.pandey/higgs.git"
+    },
+    "object_attributes": {
+        "assignee_id": null,
+        "author_id": 39,
+        "created_at": "2018-04-11 11:59:30 +0800",
+        "deleted_at": null,
+        "description": "",
+        "head_pipeline_id": null,
+        "id": 10986,
+        "iid": 1,
+        "last_edited_at": null,
+        "last_edited_by_id": null,
+        "merge_commit_sha": null,
+        "merge_error": null,
+        "merge_params": {
+            "force_remove_source_branch": "0"
+        },
+        "merge_status": "can_be_merged",
+        "merge_user_id": null,
+        "merge_when_pipeline_succeeds": false,
+        "milestone_id": null,
+        "source_branch": "dev-request-1",
+        "source_project_id": 321,
+        "state": "opened",
+        "target_branch": "master",
+        "target_project_id": 321,
+        "time_estimate": 0,
+        "title": "Update .pydevproject",
+        "updated_at": "2018-04-11 12:02:32 +0800",
+        "updated_by_id": null,
+        "url": "http://gitlab.grass.corp/abhishek.pandey/higgs/merge_requests/1",
+        "source": {
+            "id": 321,
+            "name": "higgs",
+            "description": "",
+            "web_url": "http://gitlab.grass.corp/abhishek.pandey/higgs",
+            "avatar_url": "http://gitlab.grass.corp/uploads/-/system/project/avatar/321/fig_01_higgs_cropped.png",
+            "git_ssh_url": "gitolite@gitlab.grass.corp:abhishek.pandey/higgs.git",
+            "git_http_url": "http://gitlab.grass.corp/abhishek.pandey/higgs.git",
+            "namespace": "abhishek.pandey",
+            "visibility_level": 0,
+            "path_with_namespace": "abhishek.pandey/higgs",
+            "default_branch": "master",
+            "ci_config_path": null,
+            "homepage": "http://gitlab.grass.corp/abhishek.pandey/higgs",
+            "url": "gitolite@gitlab.grass.corp:abhishek.pandey/higgs.git",
+            "ssh_url": "gitolite@gitlab.grass.corp:abhishek.pandey/higgs.git",
+            "http_url": "http://gitlab.grass.corp/abhishek.pandey/higgs.git"
+        },
+        "target": {
+            "id": 321,
+            "name": "higgs",
+            "description": "",
+            "web_url": "http://gitlab.grass.corp/abhishek.pandey/higgs",
+            "avatar_url": "http://gitlab.grass.corp/uploads/-/system/project/avatar/321/fig_01_higgs_cropped.png",
+            "git_ssh_url": "gitolite@gitlab.grass.corp:abhishek.pandey/higgs.git",
+            "git_http_url": "http://gitlab.grass.corp/abhishek.pandey/higgs.git",
+            "namespace": "abhishek.pandey",
+            "visibility_level": 0,
+            "path_with_namespace": "abhishek.pandey/higgs",
+            "default_branch": "master",
+            "ci_config_path": null,
+            "homepage": "http://gitlab.grass.corp/abhishek.pandey/higgs",
+            "url": "gitolite@gitlab.grass.corp:abhishek.pandey/higgs.git",
+            "ssh_url": "gitolite@gitlab.grass.corp:abhishek.pandey/higgs.git",
+            "http_url": "http://gitlab.grass.corp/abhishek.pandey/higgs.git"
+        },
+        "last_commit": {
+            "id": "fe30df50deeff638991bf117ee5cc6d591f6ee07",
+            "message": "Update .pydevproject",
+            "timestamp": "2018-04-11T11:58:39+08:00",
+            "url": "http://gitlab.grass.corp/abhishek.pandey/higgs/commit/fe30df50deeff638991bf117ee5cc6d591f6ee07",
+            "author": {
+                "name": "Abhishek Pandey",
+                "email": "abhishek.pandey@grasshopperasia.com"
+            }
+        },
+        "work_in_progress": false,
+        "total_time_spent": 0,
+        "human_total_time_spent": null,
+        "human_time_estimate": null,
+        "action": "reopen"
+    },
+    "labels": [],
+    "changes": {
+        "state": {
+            "previous": "closed",
+            "current": "opened"
+        },
+        "updated_at": {
+            "previous": "2018-04-11 12:02:29 +0800",
+            "current": "2018-04-11 12:02:32 +0800"
+        },
+        "total_time_spent": {
+            "previous": null,
+            "current": 0
+        }
+    },
+    "repository": {
+        "name": "higgs",
+        "url": "gitolite@gitlab.grass.corp:abhishek.pandey/higgs.git",
+        "description": "",
+        "homepage": "http://gitlab.grass.corp/abhishek.pandey/higgs"
+    }
+}

@@ -31,24 +31,35 @@ def webhook():
     if event != 'Merge Request Hook':
         return '', 200
     payload = json.loads(request.data)
-    logger.info('received webhook: %s' % request.data)
+    logger.info('_' * 80)
+    logger.info('received webhook: {}'.format(utils.PP(payload)))
     username = payload['user']['username']
     project_id = payload['object_attributes']['target_project_id']
     target_branch = payload['object_attributes']['target_branch']
     namespace = payload['object_attributes']['target']['path_with_namespace']
     merge_request_id = payload['object_attributes']['id']
     # loading config
+    logger.info(
+        'Current Action={}'.format(payload['object_attributes']['action']))
     try:
         cfg = mention_bot.get_repo_config(project_id, target_branch,
                                           config.CONFIG_PATH)
-        if not mention_bot.is_valid(cfg, payload):
-            # skip
-            return "", 200
-        owners = mention_bot.guess_owners_for_merge_reqeust(
-            payload, project_id, namespace, target_branch, merge_request_id,
-            username, cfg)
-        mention_bot.add_comment(project_id, merge_request_id, username, owners,
-                                cfg)
+        diff_files = []
+
+        if mention_bot.is_valid(cfg, payload):
+            diff_files = mention_bot.get_diff_files(project_id,
+                                                    merge_request_id)
+            owners = mention_bot.guess_owners_for_merge_reqeust(
+                project_id, namespace, target_branch, merge_request_id,
+                username, cfg, diff_files)
+            mention_bot.add_comment(project_id, merge_request_id, username,
+                                    owners, cfg)
+
+        if payload['object_attributes']['action'] in [
+                'open', 'reopen', 'closed', 'close', 'merge'
+        ]:
+            mention_bot.manage_labels(payload, project_id, merge_request_id,
+                                      cfg, diff_files)
     except utils.ConfigSyntaxError as e:
         utils.add_comment_merge_request(project_id, merge_request_id,
                                         e.message)

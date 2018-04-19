@@ -13,24 +13,30 @@
     "labels": {
       "fpga/": "fpga",
       "alice/": "old-alice",
+      "pyapp/box": "box",
       "pyapp/chewy": "chewy",
+      "pyapp/gore": "gore",
+      "pyapp/pike": "pike",
+      "pyapp/risk": "risk",
       "ccgh/": "ccgh",
       "vendor": "vendor",
       "protobuf": "protobuf",
-      "pyapp/risk": "risk",
       "pylib": "pylib",
       "risk/": "alice2",
-      "jsgh": "alice2"
+      "jsgh": "alice2",
+      "ghui/alice": "alice2",
+      "ghui/risk": "ghuirisk"
     },
     "labelNotifications": {
-      "fpga": "#slak",
-      "old-alice": "#slak",
-      "chewy": "#slak",
-      "ccgh": "#slak",
-      "vendor": "#slak",
-      "protobuf": "#slak",
-      "risk": "#slak",
-      "pylib": "#slak",
-      "alice2": "#slak"
+      "fpga": "#gitlab-merge-requests",
+      "old-alice": "#gitlab-merge-requests",
+      "chewy": "#gitlab-merge-requests",
+      "ccgh": "#gitlab-merge-requests",
+      "vendor": "#gitlab-merge-requests",
+      "protobuf": "#gitlab-merge-requests",
+      "risk": "#gitlab-merge-requests",
+      "pylib": "#gitlab-merge-requests",
+      "alice2": "#gitlab-merge-requests",
+      "": "#gitlab-merge-requests"
     }
 }

@@ -7,7 +7,7 @@ import logging.config
 
 logger = logging.getLogger(__name__)
 
-GITLAB_URL = os.getenv('GITLAB_URL')
+GITLAB_URL = os.getenv('GITLAB_URL') or 'http://example.com'
 GITLAB_TOKEN = os.getenv('GITLAB_TOKEN')
 GITLAB_USERNAME = os.getenv('GITLAB_USERNAME')
 GITLAB_PASSWORD = os.getenv('GITLAB_PASSWORD')
@@ -30,10 +30,17 @@ logging.config.dictConfig({
             'class': 'logging.StreamHandler',
             'formatter': 'basic'
         },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'formatter': 'basic',
+            'filename': 'log-mention.log',
+            'maxBytes': '10240',
+            'backupCount': '3',
+        }
     },
     'root': {
         'level': 'INFO',
-        'handlers': ['console']
+        'handlers': ['console', 'file']
     }
 })
 

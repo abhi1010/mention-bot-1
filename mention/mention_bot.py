@@ -6,53 +6,27 @@ import logging
 from collections import defaultdict
 from fnmatch import fnmatch
 
-from .utils import fetch_blame, get_merge_request_diff
-from .utils import add_comment_merge_request
-from .utils import has_mention_comment
-from .utils import get_project_file
-from .utils import ConfigSyntaxError
-
+from mention import notify
+from mention import config
+from mention import utils
 
 logger = logging.getLogger(__name__)
 
-
 RE_DIFF_LINE_NO = re.compile(r'\@\@ -(\d+),?(\d+)? \+(\d+),?(\d+)? \@\@')
-RE_BLAME_OR_NO = re.compile(r'(<a href="\/([\w\-0-9]+)"><img class="avatar|<a class="diff-line-num")')
+RE_BLAME_OR_NO = re.compile(
+    r'(<a href="\/([\w\-0-9]+)"><img class="avatar|<a class="diff-line-num")')
 
-_DEFAULT_CONFIG = {
-    'findPotentialReviewers': True,
-    'fileBlacklist': [],
-    'actions': [
-        'open', 'reopen'
-        ],
-    'createComment': True,
-    'numFilesToCheck': 5,
-    'skipAlreadyAssignedMR': False,
-    'skipWIP': True,
-    'maxReviewers': 2,
-    'userBlacklist': []
-}
+
 class BotConfig(object):
-    default_config = {
-        'userBlacklist': [],
-        'fileBlacklist': [],
-        'maxReviewers': 3,
-        'findPotentialReviewers': True,
-        'numFilesToCheck': 5,
-        'createComment': True,
-        'actions': ['open'],
-        'skipWIP': True,
-        'skipAlreadyAssignedMR': False,
-        'skipAlreadyMentionedMR': True,
-    }
+    default_config = config.get_default_config()
 
     @classmethod
     def from_dict(cls, d):
-        config = cls()
+        cfg = cls()
         attrs = dict(cls.default_config, **d)
         for k, v in attrs.iteritems():
-            setattr(config, k, v)
-        return config
+            setattr(cfg, k, v)
+        return cfg
 
 
 def parse_diff_file(lines):
@@ -129,12 +103,10 @@ def get_all_owners(files, blames):
 
 def sort_owners(owners):
     owner_names = owners.keys()
-    return sorted(owner_names,
-                  key=lambda k: owners[k],
-                  reverse=True)
+    return sorted(owner_names, key=lambda k: owners[k], reverse=True)
 
 
-def guess_owners(files, blames, creator, config):
+def guess_owners(files, blames, creator, cfg):
     deleted_owners = get_deleted_owners(files, blames)
     all_owners = get_all_owners(files, blames)
 
@@ -142,19 +114,18 @@ def guess_owners(files, blames, creator, config):
     all_owners = sort_owners(all_owners)
 
     deleted_owners_set = set(deleted_owners)
-    other_owners = [owner for owner in all_owners
-                    if owner not in deleted_owners_set]
+    other_owners = [
+        owner for owner in all_owners if owner not in deleted_owners_set
+    ]
 
     owners = deleted_owners + other_owners
 
     def filter_owners(owner):
         return all([
-            owner != creator,
-            owner != 'none',
-            owner not in config.userBlacklist
+            owner != creator, owner != 'none', owner not in cfg.userBlacklist
         ])
 
-    return [u for u in owners if filter_owners(u)][:config.maxReviewers]
+    return [u for u in owners if filter_owners(u)][:cfg.maxReviewers]
 
 
 def filter_files(files, fileBlacklist, numFilesToCheck):
@@ -178,28 +149,50 @@ def filter_files(files, fileBlacklist, numFilesToCheck):
 def get_files_blames(repo_namespace, target_branch, files):
     blames = {}
     for from_file, linenos in files:
-        blame = fetch_blame(repo_namespace, target_branch, from_file)
+        blame = utils.fetch_blame(repo_namespace, target_branch, from_file)
         blames[from_file] = parse_blame(blame)
     return blames
 
 
-def guess_owners_for_merge_reqeust(project_id,
-                                   namespace,
-                                   target_branch,
-                                   merge_request_id,
-                                   creator,
-                                   config):
-    if not config.findPotentialReviewers:
-        return []
-    changes = get_merge_request_diff(project_id, merge_request_id)
+def _manage_labels(payload, project_id, merge_request_id, cfg, diff_files):
+    labels = utils.get_labels(cfg, diff_files)
+
+    logger.info(
+        'labels={}; diff_files={}'.format(labels, utils.PP(diff_files)))
+    labels_in_str = ','.join(labels)
+    channels = utils.get_channels_based_on_labels(cfg, labels)
+    logger.info('channels={}'.format(channels))
+    text, msg = notify.create_slack_msg(payload, labels_in_str)
+    logger.info('slack msg={}'.format(msg))
+    notify.send_to_slack(text, msg, channels)
+    logger.info('msg sent to slack')
+    if labels_in_str:
+        utils.update_labels(project_id, merge_request_id, labels_in_str)
+    logger.info('labels updated on gitlab MR')
+
+
+def get_diff_files(project_id, merge_request_id):
+    changes = utils.get_merge_request_diff(project_id, merge_request_id)
     files = parse_diff(changes)
-    files = filter_files(files, config.fileBlacklist, config.numFilesToCheck)
+    return files
+
+
+def manage_labels(payload, project_id, merge_request_id, cfg, diff_files):
+    _manage_labels(payload, project_id, merge_request_id, cfg, diff_files)
+
+
+# IMP function
+def guess_owners_for_merge_reqeust(project_id, namespace, target_branch,
+                                   merge_request_id, creator, cfg, diff_files):
+    if not cfg.findPotentialReviewers:
+        return []
+    files = filter_files(diff_files, cfg.fileBlacklist, cfg.numFilesToCheck)
     blames = get_files_blames(namespace, target_branch, files)
-    return guess_owners(files, blames, creator, config)
+    return guess_owners(files, blames, creator, cfg)
 
 
-def add_comment(project_id, merge_request_id, creator, reviewers, config):
-    if not config.createComment:
+def add_comment(project_id, merge_request_id, creator, reviewers, cfg):
+    if not cfg.createComment:
         return
     msg = """{0}, thanks for your MR!
     By analyzing the history of the files in this pull request,
@@ -209,33 +202,36 @@ def add_comment(project_id, merge_request_id, creator, reviewers, config):
         logger.info('No valid reviewers. Ignoring')
         return False
     note = msg.format(creator, ' and '.join(reviewers_mentions))
-    if config.skipAlreadyMentionedMR and\
-       has_mention_comment(project_id, merge_request_id, note):
+    if cfg.skipAlreadyMentionedMR and\
+       utils.has_mention_comment(project_id, merge_request_id, note):
         return False
-    return add_comment_merge_request(project_id, merge_request_id, note)
+    return utils.add_comment_merge_request(project_id, merge_request_id, note)
 
 
 def get_repo_config(project_id, target_branch, config_path):
-    filecontent = get_project_file(project_id, target_branch, config_path)
+    filecontent = utils.get_project_file(project_id, target_branch,
+                                         config_path)
     if not filecontent:
-        logger.warning("Unable to find config file, use default config instead.")
-        return BotConfig.from_dict(_DEFAULT_CONFIG)
+        logger.warning(
+            "Unable to find config file, use default config instead.")
+        return BotConfig.from_dict(config.get_default_config())
     try:
-        config = json.loads(filecontent)
-        return BotConfig.from_dict(config)
+        cfg = json.loads(filecontent)
+        return BotConfig.from_dict(cfg)
     except Exception:
         logger.exception("Failed to parse config: %s" % filecontent)
-        raise ConfigSyntaxError(
-            "Unable to parse mention-bot custom configuration file due to a syntax error.")
+        raise utils.ConfigSyntaxError(
+            "Unable to parse mention-bot custom configuration file due to a syntax error."
+        )
 
 
-def is_valid(config, data):
-    if data['object_attributes']['action'] not in config.actions:
+def is_valid(cfg, data):
+    if data['object_attributes']['action'] not in cfg.actions:
         return False
 
-    if config.skipWIP and data['object_attributes']['work_in_progress']:
+    if cfg.skipWIP and data['object_attributes']['work_in_progress']:
         return False
 
-    if config.skipAlreadyAssignedMR and 'assignee' not in data['object_attributes']:
+    if cfg.skipAlreadyAssignedMR and 'assignee' not in data['object_attributes']:
         return False
     return True
