@@ -11,8 +11,7 @@ GITLAB_URL = os.getenv('GITLAB_URL') or 'http://example.com'
 GITLAB_TOKEN = os.getenv('GITLAB_TOKEN')
 GITLAB_USERNAME = os.getenv('GITLAB_USERNAME')
 GITLAB_PASSWORD = os.getenv('GITLAB_PASSWORD')
-SLACK_TOKEN = os.getenv(
-    'SLACK_TOKEN') or 'xoxb-18734302050-7Aa4j8DaPYwAKvzSWrczVJ0o'
+SLACK_TOKEN = os.getenv('SLACK_TOKEN')
 CONFIG_PATH = '.mention-bot'
 
 logging.config.dictConfig({
