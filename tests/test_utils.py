@@ -45,7 +45,7 @@ class TestUtils(unittest.TestCase):
             config.get_default_config())
         channels = utils.get_channels_based_on_labels(default_config,
                                                       ['ccgh', 'risk'])
-        self.assertListEqual(channels, ['#slak'])
+        self.assertListEqual(channels, [u'#gitlab-merge-requests'])
 
         channels = utils.get_channels_based_on_labels(default_config, [])
-        self.assertListEqual(channels, ['#slak'])
+        self.assertListEqual(channels, ['#gitlab-merge-requests'])
