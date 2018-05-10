@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 RE_DIFF_LINE_NO = re.compile(r'\@\@ -(\d+),?(\d+)? \+(\d+),?(\d+)? \@\@')
 RE_BLAME_OR_NO = re.compile(
-    r'(<a class=.commit-author-link .*href=..([\w\-0-9.]+)|<a class=.diff-line-num.)'
+    r'(<a class=.commit-author-link .*href="\/([\w\-0-9.]+)|<a class=.diff-line-num.)'
 )
 
 
