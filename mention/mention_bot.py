@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 
 RE_DIFF_LINE_NO = re.compile(r'\@\@ -(\d+),?(\d+)? \+(\d+),?(\d+)? \@\@')
 RE_BLAME_OR_NO = re.compile(
-    r'(<a href="\/([\w\-0-9]+)"><img class="avatar|<a class="diff-line-num")')
+    r'(<a class=.commit-author-link .*href=..([\w\-0-9.]+)|<a class=.diff-line-num.)'
+)
 
 
 class BotConfig(object):
@@ -68,6 +69,7 @@ def parse_blame(blame):
     lines = []
     current_author = 'none'
     result = RE_BLAME_OR_NO.finditer(blame)
+
     for matches in result:
         if matches.group(2):
             current_author = matches.group(2)
@@ -107,25 +109,30 @@ def sort_owners(owners):
 
 
 def guess_owners(files, blames, creator, cfg):
-    deleted_owners = get_deleted_owners(files, blames)
-    all_owners = get_all_owners(files, blames)
+    if files:
+        deleted_owners = get_deleted_owners(files, blames)
+        all_owners = get_all_owners(files, blames)
 
-    deleted_owners = sort_owners(deleted_owners)
-    all_owners = sort_owners(all_owners)
+        deleted_owners = sort_owners(deleted_owners)
+        all_owners = sort_owners(all_owners)
 
-    deleted_owners_set = set(deleted_owners)
-    other_owners = [
-        owner for owner in all_owners if owner not in deleted_owners_set
-    ]
+        deleted_owners_set = set(deleted_owners)
+        other_owners = [
+            owner for owner in all_owners if owner not in deleted_owners_set
+        ]
 
-    owners = deleted_owners + other_owners
+        owners = deleted_owners + other_owners
+        blocked_users = utils.get_blocked_users()
 
-    def filter_owners(owner):
-        return all([
-            owner != creator, owner != 'none', owner not in cfg.userBlacklist
-        ])
+        def filter_owners(owner):
+            return all([
+                owner != creator, owner != 'none',
+                owner not in cfg.userBlacklist, owner not in blocked_users
+            ])
 
-    return [u for u in owners if filter_owners(u)][:cfg.maxReviewers]
+        logger.info('guess_owners: locals={}'.format(utils.PP(locals())))
+        return [u for u in owners if filter_owners(u)][:cfg.maxReviewers]
+    return []
 
 
 def filter_files(files, fileBlacklist, numFilesToCheck):
@@ -150,22 +157,26 @@ def get_files_blames(repo_namespace, target_branch, files):
     blames = {}
     for from_file, linenos in files:
         blame = utils.fetch_blame(repo_namespace, target_branch, from_file)
+        logger.info('file={}; lines={}'.format(from_file, linenos))
+        # logger.info('blame = {}'.format(
+        #     blame.encode('ascii', 'ignore').decode('ascii')))
         blames[from_file] = parse_blame(blame)
     return blames
 
 
 def _manage_labels(payload, project_id, merge_request_id, cfg, diff_files):
-    labels = utils.get_labels(cfg, diff_files)
+    labels = utils.get_labels(cfg,
+                              diff_files) or utils.get_payload_labels(payload)
 
     logger.info(
         'labels={}; diff_files={}'.format(labels, utils.PP(diff_files)))
     labels_in_str = ','.join(labels)
     channels = utils.get_channels_based_on_labels(cfg, labels)
     logger.info('channels={}'.format(channels))
-    text, msg = notify.create_slack_msg(payload, labels_in_str)
+    text, msg = notify.create_slack_msg_short(payload, labels_in_str)
     logger.info('slack msg={}'.format(msg))
     notify.send_to_slack(text, msg, channels)
-    logger.info('msg sent to slack')
+    logger.info('msg sent to slack on channels: {}'.format(channels))
     if labels_in_str:
         utils.update_labels(project_id, merge_request_id, labels_in_str)
     logger.info('labels updated on gitlab MR')

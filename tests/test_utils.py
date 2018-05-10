@@ -11,17 +11,6 @@ from mention import mention_bot
 from mention import notify
 
 
-class TestNotify(unittest.TestCase):
-    def test_create_slack_msg(self):
-        default_config = mention_bot.BotConfig.from_dict(
-            config.get_default_config())
-        with open('tests/data/merge_request_event.json') as f:
-            data = json.loads(f.read())
-            labels = 'ccgh'
-            msg = notify.create_slack_msg(data, labels)
-            self.assertTrue(len(msg) > 0)
-
-
 class TestUtils(unittest.TestCase):
     def test_default_config(self):
         assert True
@@ -49,3 +38,8 @@ class TestUtils(unittest.TestCase):
 
         channels = utils.get_channels_based_on_labels(default_config, [])
         self.assertListEqual(channels, ['#gitlab-merge-requests'])
+
+    def test_get_payload_labels(self):
+        payload = {u'labels': [{u'title': u'risk'}, {u'title': u'ccgh'}]}
+        labels = utils.get_payload_labels(payload)
+        self.assertListEqual(sorted(labels), ['ccgh', 'risk'])

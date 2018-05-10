@@ -40,6 +40,11 @@ def get_channels_based_on_labels(cfg, labels):
     return channels
 
 
+def get_payload_labels(payload):
+    return [l[u'title'].encode('utf-8')
+            for l in payload[u'labels']] if u'labels' in payload else []
+
+
 def get_labels(cfg, files):
     labels_to_add = []
     files_to_use = [x[0] for x in files]
@@ -55,6 +60,16 @@ def get_gitlab_client():
     if _gitlab_client is None:
         _gitlan_client = Gitlab(GITLAB_URL, token=GITLAB_TOKEN)
     return _gitlan_client
+
+
+def get_blocked_users():
+    client = get_gitlab_client()
+    blocked_users = [
+        u[u'username'].encode('utf-8') for u in client.getusers(per_page=200)
+        if u[u'state'] != u'active'
+    ]
+
+    return blocked_users
 
 
 def update_labels(project_id, merge_request_id, labels):
@@ -141,8 +156,9 @@ def fetch_blame(namespace, target_branch, path):
     try:
         url = '%s/%s/blame/%s/%s' % (GITLAB_URL, namespace, target_branch,
                                      path)
+        logger.info('fetch_blame: locals={}'.format(PP(locals())))
         response = session.get(url)
         response.raise_for_status()
     except requests.HTTPError:
-        logger.warning("Fetch %s blame failed." % url)
+        logger.warning("Fetch %s blame failed.".format(url))
     return response.text

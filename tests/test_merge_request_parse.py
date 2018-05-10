@@ -37,8 +37,7 @@ class TestMergeRequestParse(unittest.TestCase):
             lines = parse_blame(blame)
             assert isinstance(lines, list)
             assert len(lines) > 0
-            self.assertIn('DouweM', lines)
-            self.assertIn('tnir', lines)
+            self.assertIn('jacek.sieka', lines)
 
     def test_get_owners(self):
         files = [
@@ -76,7 +75,7 @@ class TestMergeRequestParse(unittest.TestCase):
         creator = 'ck'
         config = BotConfig.from_dict({'userBlacklist': ['amy']})
         owners = guess_owners([], [], creator, config)
-        self.assertEqual(owners, ['wen', 'xiaofeng', 'iven'])
+        self.assertEqual(owners, [])
 
     def test_filter_files(self):
         files = [

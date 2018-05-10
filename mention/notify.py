@@ -32,7 +32,6 @@ _FORMAT = '''
         "author_icon": "http://cdn0.iconfinder.com/data/icons/development-2/24/pull-request-256.png",
         "title": "{TITLE}",
         "title_link": "{TITLE_LINK}",
-        "text": "{TEXT}",
         "fields": [
             {{
                 "title": "Repo",
@@ -54,22 +53,41 @@ _FORMAT = '''
 '''
 
 
-def _get_color(action):
-    color = '#40c057'  # 'open'
-    if action in ['update', 'reopen']:
-        color = 'fab005'
-    elif action in ['close', 'closed']:
-        color = '#e03131'
-    elif action in ['merged', 'merge']:
-        color = '#4c6ef5'
+def create_slack_msg_long(data, labels):
+    '''
+    Helps you create a slack message in the long format.
+    It contains details as attachments instead of being in one line.
+    Color coded 
+    :param data:
+    :param labels:
+    :return:
+    '''
 
-    return color
+    def _get_color(action):
+        color = '#40c057'  # 'open'
+        if action in ['update', 'reopen']:
+            color = 'fab005'
+        elif action in ['close', 'closed']:
+            color = '#e03131'
+        elif action in ['merged', 'merge']:
+            color = '#4c6ef5'
+        return color
 
+    def _create_slack_msg_long(title, color, author, author_link, title_link,
+                               text, labels, status):
+        return _FORMAT.format(
+            TITLE=title,
+            COLOR=color,
+            AUTHOR=author,
+            AUTHOR_LINK=author_link,
+            TITLE_LINK=title_link,
+            TEXT='*Desc*: {}'.format(text),
+            LABELS=labels,
+            STATUS=status)
 
-def create_slack_msg(data, labels):
     obj = data['object_attributes']
     action = obj['action']
-    title = obj['title']
+    title = '{}: {}'.format(obj['iid'], obj['title'])
     color = _get_color(action)
     author = data['user']['username']
     author_link = data['user']['avatar_url']
@@ -77,18 +95,26 @@ def create_slack_msg(data, labels):
     text = obj['description']
     status = action
     labels_str = _LABELS_FORMAT.format(LABELS=labels) if labels else ''
-    return text, _create_slack_msg(title, color, author, author_link,
-                                   title_link, text, labels_str, status)
+    return text, _create_slack_msg_long(title, color, author, author_link,
+                                        title_link, text, labels_str, status)
 
 
-def _create_slack_msg(title, color, author, author_link, title_link, text,
-                      labels, status):
-    return _FORMAT.format(
-        TITLE=title,
-        COLOR=color,
-        AUTHOR=author,
-        AUTHOR_LINK=author_link,
-        TITLE_LINK=title_link,
-        TEXT=text,
-        LABELS=labels,
-        STATUS=status)
+_FMTS_SHORT = '{AUTHOR} {STATUS} *!{IID}* in _<http://gitlab/p/higgs/|p/higgs>_: *<{TITLE_LINK}|{TITLE}>* {LABELS}'
+_STATUS_REPLACEMENTS = {
+    'open': 'opened',
+    'close': 'closed',
+    'merge': 'merged',
+    'reopen': 'reopened'
+}
+
+
+def create_slack_msg_short(data, labels):
+    obj = data['object_attributes']
+    return _FMTS_SHORT.format(
+        AUTHOR=data['user']['username'],
+        STATUS=_STATUS_REPLACEMENTS[obj['action']]
+        if obj['action'] in _STATUS_REPLACEMENTS else obj['action'],
+        IID=obj['iid'],
+        TITLE_LINK=obj['url'],
+        TITLE=obj['title'],
+        LABELS='_({})_'.format(labels) if labels else ''), None
