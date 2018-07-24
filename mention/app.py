@@ -5,12 +5,49 @@ import logging
 
 from flask import Flask, request
 
+
+## setup logging
+
+import logging.config
+
+logger = logging.getLogger(__name__)
+
+logging.config.dictConfig({
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'basic': {
+            'format': '%(levelname)s %(asctime)s %(module)s '
+            '%(message)s'
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'basic'
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'formatter': 'basic',
+            'filename': 'log-mention.log',
+            'maxBytes': '10240',
+            'backupCount': '3',
+        }
+    },
+    'root': {
+        'level': 'INFO',
+        'handlers': ['console', 'file']
+    }
+})
+
+
+## end logging setup
 from mention import utils
 from mention import mention_bot
 from mention import config
 
 app = Flask(__name__)
-logger = logging.getLogger(__name__)
 
 
 @app.route('/check_health', methods=['GET'])

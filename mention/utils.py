@@ -58,15 +58,27 @@ def get_labels(cfg, files):
 def get_gitlab_client():
     global _gitlab_client
     if _gitlab_client is None:
-        _gitlan_client = Gitlab(GITLAB_URL, token=GITLAB_TOKEN)
+        _gitlan_client = Gitlab(GITLAB_URL, private_token=GITLAB_TOKEN)
     return _gitlan_client
 
 
+def add_comment_merge_request(project_id, merge_request_id, note):
+    client = get_gitlab_client()
+    return client.addcommenttomergerequest(project_id, merge_request_id, note)
+
+def get_active_users():
+    client = get_gitlab_client()
+    return [u.attributes[u'username'].encode('utf-8')
+            for u in client.users.list(all=True)]
+
 def get_blocked_users():
     client = get_gitlab_client()
+    for u in client.users.list(all=True):
+        print('custom users = {}'.format(u.attributes[u'username']))
     blocked_users = [
-        u[u'username'].encode('utf-8') for u in client.getusers(per_page=200)
-        if u[u'state'] != u'active'
+        u.attributes[u'username'].encode('utf-8')
+            for u in client.users.list(all=True)
+        if u.attributes[u'state'] != u'active'
     ]
 
     return blocked_users
@@ -112,10 +124,6 @@ def get_project_file(project_id, branch, path):
     client = get_gitlab_client()
     return client.getrawfile(project_id, branch, path)
 
-
-def add_comment_merge_request(project_id, merge_request_id, note):
-    client = Gitlab(GITLAB_URL, token=GITLAB_TOKEN)
-    return client.addcommenttomergerequest(project_id, merge_request_id, note)
 
 
 def _search_authenticity_token(html):
