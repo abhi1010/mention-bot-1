@@ -178,7 +178,7 @@ def _manage_labels(payload, project_id, merge_request_id, cfg, diff_files):
     notify.send_to_slack(text, msg, channels)
     logger.info('msg sent to slack on channels: {}'.format(channels))
     if labels_in_str:
-        utils.update_labels(project_id, merge_request_id, labels_in_str)
+        utils.update_labels(project_id, merge_request_id, labels)
     logger.info('labels updated on gitlab MR')
 
 

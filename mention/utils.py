@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import re
 import logging
 import pprint
+import base64
 
 import requests
 from gitlab import Gitlab
@@ -61,15 +62,25 @@ def get_gitlab_client():
         _gitlan_client = Gitlab(GITLAB_URL, private_token=GITLAB_TOKEN)
     return _gitlan_client
 
+def get_project(project_id):
+    client = get_gitlab_client()
+    project = client.projects.get(project_id)
+    return project
+
+def get_merge_request(project_id, merge_request_id):
+    project = get_project(project_id)
+    mr = project.mergerequests.get(merge_request_id)
+    return mr
 
 def add_comment_merge_request(project_id, merge_request_id, note):
-    client = get_gitlab_client()
-    return client.addcommenttomergerequest(project_id, merge_request_id, note)
+    merge_request = get_merge_request(project_id, merge_request_id)
+    res = merge_request.notes.create({u'body': note})
+    return res.attributes
 
 def get_active_users():
     client = get_gitlab_client()
     return [u.attributes[u'username'].encode('utf-8')
-            for u in client.users.list(all=True)]
+            for u in client.users.list(active=True)]
 
 def get_blocked_users():
     client = get_gitlab_client()
@@ -84,45 +95,51 @@ def get_blocked_users():
     return blocked_users
 
 
-def update_labels(project_id, merge_request_id, labels):
-    client = get_gitlab_client()
-    res = client.updatemergerequest(
-        project_id, merge_request_id, labels=labels)
-    print('merge_request= {}; dir={}'.format(res, dir(res)))
-    return 'kk'
-
-
-def get_merge_request_labels(project_id, merge_request_id):
-    client = get_gitlab_client()
-    merge_request = client.getmergerequest(project_id, merge_request_id)
-    return merge_request.labels()
+def update_labels(project_id, merge_request_id, labels_list):
+    merge_request = get_merge_request(project_id, merge_request_id)
+    merge_request.labels = labels_list
+    merge_request.save()
+    # client = get_gitlab_client()
+    # res = client.updatemergerequest(
+    #     project_id, merge_request_id, labels=labels)
+    # print('merge_request= {}; dir={}'.format(res, dir(res)))
+    # return 'kk'
 
 
 def get_merge_request_diff(project_id, merge_request_id):
-    client = get_gitlab_client()
-    changes = client.getmergerequestchanges(project_id, merge_request_id)
-    return changes['changes']
+    mr = get_merge_request(project_id, merge_request_id)
+    commits = mr.commits()
+    changes = ''
+    for d in commits:
+        # print('commit = {}'.format(d.diff()))
+        ch = '\n'.join([x[u'diff'] for x in d.diff()])
+        changes += ch
+    return changes
+
+
+# def get_merge_request_diff(project_id, merge_request_id):
+#     client = get_gitlab_client()
+#     changes = client.getmergerequestchanges(project_id, merge_request_id)
+#     return changes['changes']
 
 
 def has_mention_comment(project_id, merge_request_id, comment):
-    client = get_gitlab_client()
-    has_next = True
-    page = 1
-    per_page = 20
-    while has_next:
-        comments = client.getmergerequestcomments(
-            project_id, merge_request_id, page=page, per_page=per_page)
-        for item in comments:
-            if item['note'] == comment:
-                return True
-        if len(comments) < per_page:
-            has_next = False
-    return False
+    merge_request = get_merge_request(project_id, merge_request_id)
+    notes = merge_request.notes.list(all=True)
+    discussions = [n.attributes[u'body'].encode('utf-8') for n in notes]
+    return comment in discussions
 
 
 def get_project_file(project_id, branch, path):
-    client = get_gitlab_client()
-    return client.getrawfile(project_id, branch, path)
+    project = get_project(project_id)
+    f = project.files.get(file_path=path, ref=branch)
+    content = base64.b64decode(f.attributes[u'content'])
+    return content
+
+
+# def get_project_file(project_id, branch, path):
+#     client = get_gitlab_client()
+#     return client.getrawfile(project_id, branch, path)
 
 
 
