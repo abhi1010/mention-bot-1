@@ -5,6 +5,8 @@ import re
 import logging
 import pprint
 import base64
+from itertools import chain
+
 
 import requests
 from gitlab import Gitlab
@@ -119,7 +121,18 @@ def get_merge_request_plain_changes(project_id, merge_request_id):
 def get_merge_request_diff(project_id, merge_request_id):
     mr = get_merge_request(project_id, merge_request_id)
     diffs = mr.diffs.list(all=True)
-    return [mr.diffs.get(d.attributes[u'id']).attributes for d in diffs]
+    uniq_diffs = set()
+    changes = []
+    for d in diffs:
+        diff = mr.diffs.get(d.attributes[u'id'])
+        if diff.attributes[u'base_commit_sha'] not in uniq_diffs:
+            uniq_diffs.add(diff.attributes[u'base_commit_sha'])
+            logger.info('adding for ' + diff.attributes[u'base_commit_sha'])
+            changes.append(diff.attributes[u'diffs'])
+        # print('diff = {}'.format(diff.attributes[u'diffs'][u'diff']))
+    changes = list(chain(*changes))
+    print('changes = {}'.format(changes))
+    return changes
 
 
 # def get_merge_request_diff(project_id, merge_request_id):
