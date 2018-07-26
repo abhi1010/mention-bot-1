@@ -119,7 +119,8 @@ def get_merge_request_plain_changes(project_id, merge_request_id):
 def get_merge_request_diff(project_id, merge_request_id):
     mr = get_merge_request(project_id, merge_request_id)
     diffs = mr.diffs.list(all=True)
-    return [d.attributes for d in diffs]
+    return [mr.diffs.get(d.attributes[u'id']).attributes for d in diffs]
+
 
 # def get_merge_request_diff(project_id, merge_request_id):
 #     client = get_gitlab_client()
