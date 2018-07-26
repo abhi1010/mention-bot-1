@@ -106,7 +106,7 @@ def update_labels(project_id, merge_request_id, labels_list):
     # return 'kk'
 
 
-def get_merge_request_diff(project_id, merge_request_id):
+def get_merge_request_plain_changes(project_id, merge_request_id):
     mr = get_merge_request(project_id, merge_request_id)
     commits = mr.commits()
     changes = ''
@@ -116,6 +116,10 @@ def get_merge_request_diff(project_id, merge_request_id):
         changes += ch
     return changes
 
+def get_merge_request_diff(project_id, merge_request_id):
+    mr = get_merge_request(project_id, merge_request_id)
+    diffs = mr.diffs.list(all=True)
+    return [d.attributes for d in diffs]
 
 # def get_merge_request_diff(project_id, merge_request_id):
 #     client = get_gitlab_client()

@@ -74,7 +74,7 @@ def webhook():
     project_id = payload['object_attributes']['target_project_id']
     target_branch = payload['object_attributes']['target_branch']
     namespace = payload['object_attributes']['target']['path_with_namespace']
-    merge_request_id = payload['object_attributes']['id']
+    merge_request_id = payload['object_attributes']['iid']
     # loading config
     logger.info(
         'Current Action={}'.format(payload['object_attributes']['action']))
