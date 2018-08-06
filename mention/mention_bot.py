@@ -61,7 +61,7 @@ def parse_diff(changes):
         from_file = diff['old_path']
         lines = diff['diff'].split('\n')
         deleted_lines = parse_diff_file(reversed(lines))
-        files.append((from_file, deleted_lines))
+        files.append    ((from_file, deleted_lines))
     return files
 
 
@@ -130,7 +130,7 @@ def guess_owners(files, blames, creator, cfg):
                 owner not in cfg.userBlacklist, owner not in blocked_users
             ])
 
-        logger.info('guess_owners: locals={}'.format(utils.PP(locals())))
+        logger.info('guess_owners: locals={}'.format(locals()))
         return [u for u in owners if filter_owners(u)][:cfg.maxReviewers]
     return []
 
@@ -185,6 +185,8 @@ def _manage_labels(payload, project_id, merge_request_id, cfg, diff_files):
 def get_diff_files(project_id, merge_request_id):
     changes = utils.get_merge_request_diff(project_id, merge_request_id)
     files = parse_diff(changes)
+    if not files:
+        logger.info('No files found. Changes were: {}'.format(changes))
     return files
 
 

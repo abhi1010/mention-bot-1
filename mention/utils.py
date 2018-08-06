@@ -199,7 +199,7 @@ def fetch_blame(namespace, target_branch, path):
     try:
         url = '%s/%s/blame/%s/%s' % (GITLAB_URL, namespace, target_branch,
                                      path)
-        logger.info('fetch_blame: locals={}'.format(PP(locals())))
+        logger.info('fetch_blame: locals={}'.format(locals()))
         response = session.get(url)
         response.raise_for_status()
     except requests.HTTPError:
