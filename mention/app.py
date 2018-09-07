@@ -17,7 +17,7 @@ logging.config.dictConfig({
     'disable_existing_loggers': False,
     'formatters': {
         'basic': {
-            'format': '%(levelname)s %(asctime)s %(module)s '
+            'format': '%(levelname)s %(asctime)s %(filename)s:%(lineno)d '
             '%(message)s'
         },
     },

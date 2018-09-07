@@ -68,7 +68,7 @@ def parse_diff(changes):
 def parse_blame(blame):
     lines = []
     current_author = 'none'
-    result = RE_BLAME_OR_NO.finditer(blame)
+    result = RE_BLAME_OR_NO.finditer(blame) if blame else ''
 
     for matches in result:
         if matches.group(2):

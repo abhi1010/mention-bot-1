@@ -205,5 +205,5 @@ def fetch_blame(namespace, target_branch, path):
         response = session.get(url)
         response.raise_for_status()
     except requests.HTTPError:
-        logger.warning("Fetch %s blame failed.".format(url))
-    return response.text
+        logger.warning("Fetch blame failed: {}".format(url))
+    return ''
