@@ -158,8 +158,8 @@ def get_files_blames(repo_namespace, target_branch, files):
     for from_file, linenos in files:
         blame = gitlab_client.fetch_blame(repo_namespace, target_branch, from_file)
         logger.info('file={}; lines={}'.format(from_file, linenos))
-        # logger.info('blame = {}'.format(
-        #     blame.encode('ascii', 'ignore').decode('ascii')))
+        logger.info('blame = {}'.format(
+            blame.encode('ascii', 'ignore').decode('ascii')))
         blames[from_file] = parse_blame(blame)
     return blames
 

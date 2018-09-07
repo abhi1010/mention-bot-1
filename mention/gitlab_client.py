@@ -133,7 +133,7 @@ def get_merge_request_diff(project_id, merge_request_id):
             changes.append(diff.attributes[u'diffs'])
         # print('diff = {}'.format(diff.attributes[u'diffs'][u'diff']))
     changes = list(chain(*changes))
-    print('changes = {}'.format(changes))
+    logger.info('changes = {}'.format(changes))
     return changes
 
 
