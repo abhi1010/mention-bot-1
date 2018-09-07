@@ -122,12 +122,12 @@ def guess_owners(files, blames, creator, cfg):
         ]
 
         owners = deleted_owners + other_owners
-        blocked_users = utils.get_blocked_users()
+        active_users = utils.get_active_users()
 
         def filter_owners(owner):
             return all([
                 owner != creator, owner != 'none',
-                owner not in cfg.userBlacklist, owner not in blocked_users
+                owner not in cfg.userBlacklist, owner in active_users
             ])
 
         logger.info('guess_owners: locals={}'.format(locals()))

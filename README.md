@@ -66,3 +66,12 @@ Once awakened, the bot will download the diff of the merge request and figure ou
 For these, it will download the associated blame to figure out who last touched that line, as they may be a good reviewer.
 
 After running the algorithm described in the next section, it will comment on the pull request notifying those people and go back to sleep.
+
+## Installation
+
+This setup is currently installed manually at `csqprod-dmz03` in folder `/usr/local/mention-bot/mention-bot-lfyzjck/`
+
+If you want a quick look at the log file, go into `/tmp/bot.log`. It contains the logs from the latest run.
+Full logs are available at `/usr/local/mention-bot/mention-bot-lfyzjck/log-mention.log`.
+
+ 
