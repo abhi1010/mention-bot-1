@@ -8,7 +8,7 @@ from fnmatch import fnmatch
 
 from mention import notify
 from mention import config
-from mention import utils
+from mention import gitlab_client
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +122,7 @@ def guess_owners(files, blames, creator, cfg):
         ]
 
         owners = deleted_owners + other_owners
-        active_users = utils.get_active_users()
+        active_users = gitlab_client.get_active_users()
 
         def filter_owners(owner):
             return all([
@@ -156,7 +156,7 @@ def filter_files(files, fileBlacklist, numFilesToCheck):
 def get_files_blames(repo_namespace, target_branch, files):
     blames = {}
     for from_file, linenos in files:
-        blame = utils.fetch_blame(repo_namespace, target_branch, from_file)
+        blame = gitlab_client.fetch_blame(repo_namespace, target_branch, from_file)
         logger.info('file={}; lines={}'.format(from_file, linenos))
         # logger.info('blame = {}'.format(
         #     blame.encode('ascii', 'ignore').decode('ascii')))
@@ -165,25 +165,25 @@ def get_files_blames(repo_namespace, target_branch, files):
 
 
 def _manage_labels(payload, project_id, merge_request_id, cfg, diff_files):
-    labels = utils.get_labels(cfg,
-                              diff_files) or utils.get_payload_labels(payload)
+    labels = gitlab_client.get_labels(cfg,
+                                      diff_files) or gitlab_client.get_payload_labels(payload)
 
     logger.info(
-        'labels={}; diff_files={}'.format(labels, utils.PP(diff_files)))
+        'labels={}; diff_files={}'.format(labels, gitlab_client.PP(diff_files)))
     labels_in_str = ','.join(labels)
-    channels = utils.get_channels_based_on_labels(cfg, labels)
+    channels = gitlab_client.get_channels_based_on_labels(cfg, labels)
     logger.info('channels={}'.format(channels))
     text, msg = notify.create_slack_msg_short(payload, labels_in_str)
     logger.info('slack msg={}'.format(msg))
     notify.send_to_slack(text, msg, channels)
     logger.info('msg sent to slack on channels: {}'.format(channels))
     if labels_in_str:
-        utils.update_labels(project_id, merge_request_id, labels)
+        gitlab_client.update_labels(project_id, merge_request_id, labels)
     logger.info('labels updated on gitlab MR')
 
 
 def get_diff_files(project_id, merge_request_id):
-    changes = utils.get_merge_request_diff(project_id, merge_request_id)
+    changes = gitlab_client.get_merge_request_diff(project_id, merge_request_id)
     files = parse_diff(changes)
     if not files:
         logger.info('No files found. Changes were: {}'.format(changes))
@@ -216,14 +216,14 @@ def add_comment(project_id, merge_request_id, creator, reviewers, cfg):
         return False
     note = msg.format(creator, ' and '.join(reviewers_mentions))
     if cfg.skipAlreadyMentionedMR and\
-       utils.has_mention_comment(project_id, merge_request_id, note):
+       gitlab_client.has_mention_comment(project_id, merge_request_id, note):
         return False
-    return utils.add_comment_merge_request(project_id, merge_request_id, note)
+    return gitlab_client.add_comment_merge_request(project_id, merge_request_id, note)
 
 
 def get_repo_config(project_id, target_branch, config_path):
-    filecontent = utils.get_project_file(project_id, target_branch,
-                                         config_path)
+    filecontent = gitlab_client.get_project_file(project_id, target_branch,
+                                                 config_path)
     if not filecontent:
         logger.warning(
             "Unable to find config file, use default config instead.")
@@ -233,7 +233,7 @@ def get_repo_config(project_id, target_branch, config_path):
         return BotConfig.from_dict(cfg)
     except Exception:
         logger.exception("Failed to parse config: %s" % filecontent)
-        raise utils.ConfigSyntaxError(
+        raise gitlab_client.ConfigSyntaxError(
             "Unable to parse mention-bot custom configuration file due to a syntax error."
         )
 

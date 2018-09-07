@@ -43,7 +43,7 @@ logging.config.dictConfig({
 
 
 ## end logging setup
-from mention import utils
+from mention import gitlab_client
 from mention import mention_bot
 from mention import config
 
@@ -69,7 +69,7 @@ def webhook():
         return '', 200
     payload = json.loads(request.data)
     logger.info('_' * 80)
-    logger.info('received webhook: {}'.format(utils.PP(payload)))
+    logger.info('received webhook: {}'.format(gitlab_client.PP(payload)))
     username = payload['user']['username']
     project_id = payload['object_attributes']['target_project_id']
     target_branch = payload['object_attributes']['target_branch']
@@ -97,9 +97,9 @@ def webhook():
         ]:
             mention_bot.manage_labels(payload, project_id, merge_request_id,
                                       cfg, diff_files)
-    except utils.ConfigSyntaxError as e:
-        utils.add_comment_merge_request(project_id, merge_request_id,
-                                        e.message)
+    except gitlab_client.ConfigSyntaxError as e:
+        gitlab_client.add_comment_merge_request(project_id, merge_request_id,
+                                                e.message)
     return "", 200
 
 

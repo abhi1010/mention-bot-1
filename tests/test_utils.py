@@ -4,7 +4,7 @@ import unittest
 import mock
 import json
 
-from mention import utils
+from mention import gitlab_client
 from mention import app
 from mention import config
 from mention import mention_bot
@@ -26,20 +26,20 @@ class TestUtils(unittest.TestCase):
         ]
         default_config = mention_bot.BotConfig.from_dict(
             config.get_default_config())
-        labels = utils.get_labels(default_config, files)
+        labels = gitlab_client.get_labels(default_config, files)
         self.assertListEqual(labels, sorted(['risk', 'pylib']))
 
     def test_get_channels_based_on_labels(self):
         default_config = mention_bot.BotConfig.from_dict(
             config.get_default_config())
-        channels = utils.get_channels_based_on_labels(default_config,
-                                                      ['ccgh', 'risk'])
+        channels = gitlab_client.get_channels_based_on_labels(default_config,
+                                                              ['ccgh', 'risk'])
         self.assertListEqual(channels, [u'#gitlab-merge-requests'])
 
-        channels = utils.get_channels_based_on_labels(default_config, [])
+        channels = gitlab_client.get_channels_based_on_labels(default_config, [])
         self.assertListEqual(channels, ['#gitlab-merge-requests'])
 
     def test_get_payload_labels(self):
         payload = {u'labels': [{u'title': u'risk'}, {u'title': u'ccgh'}]}
-        labels = utils.get_payload_labels(payload)
+        labels = gitlab_client.get_payload_labels(payload)
         self.assertListEqual(sorted(labels), ['ccgh', 'risk'])

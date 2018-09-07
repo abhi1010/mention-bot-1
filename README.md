@@ -74,4 +74,4 @@ This setup is currently installed manually at `csqprod-dmz03` in folder `/usr/lo
 If you want a quick look at the log file, go into `/tmp/bot.log`. It contains the logs from the latest run.
 Full logs are available at `/usr/local/mention-bot/mention-bot-lfyzjck/log-mention.log`.
 
- 
+> Remember to run the `zipzp` as `dev` user. Otherwise you will have permission issues.

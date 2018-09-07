@@ -4,7 +4,7 @@ import unittest
 import mock
 import json
 
-from mention.utils import setup_cookie, fetch_blame
+from mention.gitlab_client import setup_cookie, fetch_blame
 from mention.mention_bot import parse_diff_file
 from mention.mention_bot import parse_blame, get_deleted_owners, get_all_owners
 from mention.mention_bot import sort_owners, filter_files
