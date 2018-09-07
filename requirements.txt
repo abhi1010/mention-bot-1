@@ -27,3 +27,4 @@ Werkzeug==0.11.4
 zc.buildout==2.11.3
 zc.recipe.egg==2.0.3
 python-gitlab==1.5.1
+pyaml

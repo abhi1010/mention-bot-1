@@ -46,6 +46,7 @@ logging.config.dictConfig({
 from mention import gitlab_client
 from mention import mention_bot
 from mention import config
+from mention import helper
 
 app = Flask(__name__)
 
@@ -69,7 +70,8 @@ def webhook():
         return '', 200
     payload = json.loads(request.data)
     logger.info('_' * 80)
-    logger.info('received webhook: {}'.format(gitlab_client.PP(payload)))
+    logger.info('received webhook: {}'.format(helper.load_dict_as_yaml(payload)))
+
     username = payload['user']['username']
     project_id = payload['object_attributes']['target_project_id']
     target_branch = payload['object_attributes']['target_branch']

@@ -15,7 +15,7 @@ from mention.mention_bot import add_comment
 
 
 class TestMergeRequestParse(unittest.TestCase):
-    @mock.patch('mention.utils.has_mention_comment')
+    @mock.patch('mention.gitlab_client.has_mention_comment')
     def test_add_comment(self, has_mention_comment):
         has_mention_comment.return_value = True
         project_id = 1
@@ -105,7 +105,7 @@ class TestMergeRequestParse(unittest.TestCase):
         authors = parse_blame(blame)
         self.fail(authors)
 
-    @mock.patch('mention.utils.get_project_file')
+    @mock.patch('mention.gitlab_client.get_project_file')
     def test_get_repo_config_default(self, get_project_file):
         get_project_file.return_value = False
         config = get_repo_config(90, 'master', '.mention_bot')
