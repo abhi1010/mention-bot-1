@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_default_config():
-    file_path = 'sample-mention-bot.json'
+    file_path = 'tests/data/sample-mention-bot.json'
     with open(file_path, 'rt') as file_placeholder:
         lines = file_placeholder.readlines()
         text = ''.join(lines)
