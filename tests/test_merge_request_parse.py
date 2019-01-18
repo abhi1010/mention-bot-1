@@ -31,14 +31,6 @@ class TestMergeRequestParse(unittest.TestCase):
             deleted_lines = parse_diff_file(lines)
             assert len(deleted_lines) > 0
 
-    def test_parse_blame(self):
-        with open('tests/data/test.blame') as f:
-            blame = f.read()
-            lines = parse_blame(blame)
-            assert isinstance(lines, list)
-            assert len(lines) > 0
-            self.assertIn('jacek.sieka', lines)
-
     def test_get_owners(self):
         files = [
             ('test.py', [1, 2, 3]),
