@@ -2,6 +2,11 @@
 # coding: utf-8
 import json
 import logging
+from Queue import Queue, Empty
+from threading import Thread
+import datetime
+import math
+import time
 
 from flask import Flask, request
 
@@ -9,8 +14,6 @@ from flask import Flask, request
 ## setup logging
 
 import logging.config
-
-logger = logging.getLogger(__name__)
 
 logging.config.dictConfig({
     'version': 1,
@@ -41,6 +44,8 @@ logging.config.dictConfig({
     }
 })
 
+logger = logging.getLogger(__name__)
+
 
 ## end logging setup
 from mention import gitlab_client
@@ -49,7 +54,8 @@ from mention import config
 from mention import helper
 
 app = Flask(__name__)
-
+_STOP_PROCESS = False
+enclosure_queue = Queue()
 
 @app.route('/check_health', methods=['GET'])
 def check_health():
@@ -68,10 +74,20 @@ def webhook():
         return '', 400
     if event != 'Merge Request Hook':
         return '', 200
-    payload = json.loads(request.data)
-    logger.info('_' * 80)
-    logger.info('received webhook: {}'.format(helper.load_dict_as_yaml(payload)))
 
+    # add payload to queue so that _payload_worker(q) can process it in
+    # a separate thread
+    payload = json.loads(request.data)
+    enclosure_queue.put((datetime.datetime.now(), payload))
+
+    return "", 200
+
+
+def _manage_payload(payload):
+    logger.info('_' * 80)
+    logger.info(
+        'Received payload<{}>: {}'.format(
+            id(payload), helper.load_dict_as_yaml(payload)))
     username = payload['user']['username']
     project_id = payload['object_attributes']['target_project_id']
     target_branch = payload['object_attributes']['target_branch']
@@ -95,19 +111,57 @@ def webhook():
                                     owners, cfg)
 
         if payload['object_attributes']['action'] in [
-                'open', 'reopen', 'closed', 'close', 'merge'
+            'open', 'reopen', 'closed', 'close', 'merge'
         ]:
             mention_bot.manage_labels(payload, project_id, merge_request_id,
                                       cfg, diff_files)
     except gitlab_client.ConfigSyntaxError as e:
         gitlab_client.add_comment_merge_request(project_id, merge_request_id,
                                                 e.message)
-    return "", 200
+
+
+def _check_and_sleep(ts):
+    now = datetime.datetime.now()
+    exp_ts = datetime.timedelta(seconds=10) + ts
+    if exp_ts > now:
+        should_wait = math.ceil((exp_ts - now).total_seconds())
+        if should_wait:
+            logger.info('ts={}; now={}; sleeping for: {}'.format(
+                ts, now, should_wait))
+            time.sleep(should_wait)
+
+def _payload_worker(q):
+    # this worker is needed solely because sometimes the MR comes in too fast,
+    # and gitlab queries fail. So let's add a delay of 10s, to ensure that
+    # all updates work.
+    logger.info('Looking for next payload')
+    global _STOP_PROCESS
+    while not _STOP_PROCESS:
+        try:
+            payload_ts, payload = q.get(timeout=2)
+            logger.info('Looking for next payload')
+            logger.info('Payload found: at ts={}; id={}'.format(
+                payload_ts, id(payload)))
+            _check_and_sleep(payload_ts)
+            _manage_payload(payload)
+            q.task_done()
+        except Empty:
+            pass
 
 
 def main():
     config.check_config()
+    # setup thread to handle the payloads
+    worker = Thread(target=_payload_worker, args=(enclosure_queue,))
+    worker.setDaemon(True)
+    worker.start()
+
     app.run(host='0.0.0.0')
+    global _STOP_PROCESS
+    _STOP_PROCESS = True
+    logger.info('Stopping worker...')
+    worker.join()
+    logger.info('worker stopped...')
 
 
 if __name__ == '__main__':
