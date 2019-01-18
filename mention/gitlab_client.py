@@ -7,6 +7,7 @@ import pprint
 import base64
 from itertools import chain
 
+import sys, os
 
 import requests
 from gitlab import Gitlab
@@ -16,7 +17,7 @@ from mention.config import GITLAB_USERNAME, GITLAB_PASSWORD
 
 logger = logging.getLogger(__name__)
 
-session = requests.Session()
+session = None
 _gitlab_client = None
 
 
@@ -59,11 +60,16 @@ def get_labels(cfg, files):
 
 
 def get_gitlab_client():
+    global session
+    setup_cookie()
     global _gitlab_client
     if _gitlab_client is None:
-        _gitlan_client = Gitlab(GITLAB_URL, private_token=GITLAB_TOKEN)
-        _gitlan_client.auth()
-    return _gitlan_client
+        logger.info('creating session first time')
+        _gitlab_client = Gitlab(GITLAB_URL,
+                                api_version='4',
+                                private_token=GITLAB_TOKEN,
+                                session=session)
+    return _gitlab_client
 
 def get_project(project_id):
     client = get_gitlab_client()
@@ -89,7 +95,7 @@ def get_active_users():
 def get_blocked_users():
     client = get_gitlab_client()
     # for u in client.users.list(all=True):
-    #     print('custom users = {}'.format(u.attributes[u'username']))
+    #     logger.info('custom users = {}'.format(u.attributes[u'username']))
     blocked_users = [
         u.attributes[u'username'].encode('utf-8')
             for u in client.users.list(all=True)
@@ -106,7 +112,7 @@ def update_labels(project_id, merge_request_id, labels_list):
     # client = get_gitlab_client()
     # res = client.updatemergerequest(
     #     project_id, merge_request_id, labels=labels)
-    # print('merge_request= {}; dir={}'.format(res, dir(res)))
+    # logger.info('merge_request= {}; dir={}'.format(res, dir(res)))
     # return 'kk'
 
 
@@ -115,7 +121,7 @@ def get_merge_request_plain_changes(project_id, merge_request_id):
     commits = mr.commits()
     changes = ''
     for d in commits:
-        # print('commit = {}'.format(d.diff()))
+        # logger.info('commit = {}'.format(d.diff()))
         ch = '\n'.join([x[u'diff'] for x in d.diff()])
         changes += ch
     return changes
@@ -131,7 +137,7 @@ def get_merge_request_diff(project_id, merge_request_id):
             uniq_diffs.add(diff.attributes[u'base_commit_sha'])
             logger.info('adding for ' + diff.attributes[u'base_commit_sha'])
             changes.append(diff.attributes[u'diffs'])
-        # print('diff = {}'.format(diff.attributes[u'diffs'][u'diff']))
+        # logger.info('diff = {}'.format(diff.attributes[u'diffs'][u'diff']))
     changes = list(chain(*changes))
     logger.info('changes = {}'.format(changes))
     return changes
@@ -157,12 +163,6 @@ def get_project_file(project_id, branch, path):
     return content
 
 
-# def get_project_file(project_id, branch, path):
-#     client = get_gitlab_client()
-#     return client.getrawfile(project_id, branch, path)
-
-
-
 def _search_authenticity_token(html):
     matched = re.search(
         r'<input type="hidden" name="authenticity_token" value="(.*)" />',
@@ -171,29 +171,50 @@ def _search_authenticity_token(html):
         raise GitlabError("Fetch login page failed.")
     return matched.group(1)
 
-
 def login():
-    login_url = GITLAB_URL + '/users/auth/ldapmain/callback'
-    login_page = GITLAB_URL + '/users/sign_in'
-    headers = {
-        'Origin': GITLAB_URL,
-        'Referer': login_page,
-    }
-    response = session.get(login_url, headers=headers)
-    authenticity_token = _search_authenticity_token(response.text)
-    data = {
-        'username': GITLAB_USERNAME,
-        'password': GITLAB_PASSWORD,
-        'authenticity_token': authenticity_token,
-        'utf8': u'√',
-    }
-    return session.post(
-        login_url, headers=headers, data=data, allow_redirects=False)
+    global session
+    SIGN_IN_URL = GITLAB_URL + '/users/sign_in'
+    LOGIN_URL = GITLAB_URL + '/users/sign_in'
+    if session:
+        logger.info('session exists')
+    else:
+        logger.info('no session')
+    session = requests.Session()
+
+    sign_in_page = session.get(SIGN_IN_URL).content
+    for l in sign_in_page.split('\n'):
+        m = re.search('name="authenticity_token" value="([^"]+)"', l)
+        if m:
+            break
+
+    token = None
+    if m:
+        token = m.group(1)
+
+    if not token:
+        logger.info('Unable to find the authenticity token')
+        sys.exit(1)
+    data = {'user[login]': GITLAB_USERNAME,
+            'user[password]': GITLAB_PASSWORD,
+            'authenticity_token': token}
+    r = session.post(LOGIN_URL, data=data)
+    if r.status_code != 200:
+        logger.info('Failed to log in with status: {}. content={}'.format(
+            r.status_code, r.content
+        ))
+    else:
+        logger.info('LOGIN WORKED')
+
+    session.headers.update({'Private-Token': GITLAB_TOKEN})
 
 
 def setup_cookie():
-    if session.cookies is None or len(session.cookies) == 0:
+    global session
+    if not session:
+        logger.info('cookies need a setup')
         login()
+    else:
+        logger.info('cookies not needed')
 
 
 def fetch_blame(namespace, target_branch, path):
@@ -203,6 +224,9 @@ def fetch_blame(namespace, target_branch, path):
                                      path)
         logger.info('fetch_blame: locals={}'.format(locals()))
         response = session.get(url)
+        logger.info('response status={}; content={}'.format(
+            response.status_code, response.content
+        ))
         response.raise_for_status()
     except requests.HTTPError:
         logger.warning("Fetch blame failed: {}".format(url))
