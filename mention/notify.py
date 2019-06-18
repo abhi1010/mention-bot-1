@@ -12,8 +12,10 @@ logger = logging.getLogger(__name__)
 def send_to_slack(text, msg, channels):
     slack = Slacker(SLACK_TOKEN)
     for channel in channels:
-        slack.chat.post_message(
-            channel, text=text, attachments=msg, as_user=False)
+        slack.chat.post_message(channel,
+                                text=text,
+                                attachments=msg,
+                                as_user=False)
 
 
 _LABELS_FORMAT = '''{{
@@ -75,15 +77,14 @@ def create_slack_msg_long(data, labels):
 
     def _create_slack_msg_long(title, color, author, author_link, title_link,
                                text, labels, status):
-        return _FORMAT.format(
-            TITLE=title,
-            COLOR=color,
-            AUTHOR=author,
-            AUTHOR_LINK=author_link,
-            TITLE_LINK=title_link,
-            TEXT='*Desc*: {}'.format(text),
-            LABELS=labels,
-            STATUS=status)
+        return _FORMAT.format(TITLE=title,
+                              COLOR=color,
+                              AUTHOR=author,
+                              AUTHOR_LINK=author_link,
+                              TITLE_LINK=title_link,
+                              TEXT='*Desc*: {}'.format(text),
+                              LABELS=labels,
+                              STATUS=status)
 
     obj = data['object_attributes']
     action = obj['action']
@@ -110,11 +111,16 @@ _STATUS_REPLACEMENTS = {
 
 def create_slack_msg_short(data, labels):
     obj = data['object_attributes']
+    return get_slack_msg_short(labels, data['user']['username'], obj['action'],
+                               obj['iid'], obj['url'], obj['title'])
+
+
+def get_slack_msg_short(labels, username, action, iid, url, title):
     return _FMTS_SHORT.format(
-        AUTHOR=data['user']['username'],
-        STATUS=_STATUS_REPLACEMENTS[obj['action']]
-        if obj['action'] in _STATUS_REPLACEMENTS else obj['action'],
-        IID=obj['iid'],
-        TITLE_LINK=obj['url'],
-        TITLE=obj['title'],
+        AUTHOR=username,
+        STATUS=_STATUS_REPLACEMENTS[action]
+        if action in _STATUS_REPLACEMENTS else action,
+        IID=iid,
+        TITLE_LINK=url,
+        TITLE=title,
         LABELS='_({})_'.format(labels) if labels else ''), None

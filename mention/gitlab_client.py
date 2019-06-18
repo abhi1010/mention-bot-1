@@ -45,7 +45,7 @@ def get_channels_based_on_labels(cfg, labels):
 
 
 def get_payload_labels(payload):
-    return [l[u'title'].encode('utf-8')
+    return [l[u'title']
             for l in payload[u'labels']] if u'labels' in payload else []
 
 
@@ -56,7 +56,7 @@ def get_labels(cfg, files):
         for path, label in cfg.labels.items():
             if file.startswith(path):
                 labels_to_add.append(label)
-    return sorted([x.encode('utf-8') for x in list(set(labels_to_add))])
+    return sorted([x for x in list(set(labels_to_add))])
 
 
 def get_gitlab_client():
@@ -71,34 +71,39 @@ def get_gitlab_client():
                                 session=session)
     return _gitlab_client
 
+
 def get_project(project_id):
     client = get_gitlab_client()
     project = client.projects.get(project_id)
     return project
+
 
 def get_merge_request(project_id, merge_request_id):
     project = get_project(project_id)
     mr = project.mergerequests.get(merge_request_id)
     return mr
 
+
 def add_comment_merge_request(project_id, merge_request_id, note):
     merge_request = get_merge_request(project_id, merge_request_id)
     res = merge_request.notes.create({u'body': note})
     return res.attributes
 
+
 def get_active_users():
     client = get_gitlab_client()
-    return [u.attributes[u'username'].encode('utf-8')
-            for u in client.users.list(all=True)
-            if u.attributes[u'state'] == u'active']
+    return [
+        u.attributes[u'username'] for u in client.users.list(all=True)
+        if u.attributes[u'state'] == u'active'
+    ]
+
 
 def get_blocked_users():
     client = get_gitlab_client()
     # for u in client.users.list(all=True):
     #     logger.info('custom users = {}'.format(u.attributes[u'username']))
     blocked_users = [
-        u.attributes[u'username'].encode('utf-8')
-            for u in client.users.list(all=True)
+        u.attributes[u'username'] for u in client.users.list(all=True)
         if u.attributes[u'state'] != u'active'
     ]
 
@@ -126,6 +131,7 @@ def get_merge_request_plain_changes(project_id, merge_request_id):
         changes += ch
     return changes
 
+
 def get_merge_request_diff(project_id, merge_request_id):
     mr = get_merge_request(project_id, merge_request_id)
     diffs = mr.diffs.list(all=True)
@@ -152,7 +158,7 @@ def get_merge_request_diff(project_id, merge_request_id):
 def has_mention_comment(project_id, merge_request_id, comment):
     merge_request = get_merge_request(project_id, merge_request_id)
     notes = merge_request.notes.list(all=True)
-    discussions = [n.attributes[u'body'].encode('utf-8') for n in notes]
+    discussions = [n.attributes[u'body'] for n in notes]
     return comment in discussions
 
 
@@ -171,6 +177,7 @@ def _search_authenticity_token(html):
         raise GitlabError("Fetch login page failed.")
     return matched.group(1)
 
+
 def login():
     global session
     SIGN_IN_URL = GITLAB_URL + '/users/sign_in'
@@ -181,7 +188,7 @@ def login():
         logger.info('no session')
     session = requests.Session()
 
-    sign_in_page = session.get(SIGN_IN_URL).content
+    sign_in_page = session.get(SIGN_IN_URL).content.decode('utf-8')
     for l in sign_in_page.split('\n'):
         m = re.search('name="authenticity_token" value="([^"]+)"', l)
         if m:
@@ -194,14 +201,15 @@ def login():
     if not token:
         logger.info('Unable to find the authenticity token')
         sys.exit(1)
-    data = {'user[login]': GITLAB_USERNAME,
-            'user[password]': GITLAB_PASSWORD,
-            'authenticity_token': token}
+    data = {
+        'user[login]': GITLAB_USERNAME,
+        'user[password]': GITLAB_PASSWORD,
+        'authenticity_token': token
+    }
     r = session.post(LOGIN_URL, data=data)
     if r.status_code != 200:
         logger.info('Failed to log in with status: {}. content={}'.format(
-            r.status_code, r.content
-        ))
+            r.status_code, r.content))
     else:
         logger.info('LOGIN WORKED')
 
@@ -225,8 +233,7 @@ def fetch_blame(namespace, target_branch, path):
         logger.info('fetch_blame: locals={}'.format(locals()))
         response = session.get(url)
         logger.info('response status={}; content={}'.format(
-            response.status_code, response.content
-        ))
+            response.status_code, response.content))
         response.raise_for_status()
     except requests.HTTPError:
         logger.warning("Fetch blame failed: {}".format(url))

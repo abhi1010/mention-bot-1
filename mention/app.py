@@ -2,14 +2,14 @@
 # coding: utf-8
 import json
 import logging
-from Queue import Queue, Empty
+from queue import Queue, Empty
 from threading import Thread
 import datetime
 import math
 import time
+import argparse
 
 from flask import Flask, request
-
 
 ## setup logging
 
@@ -20,7 +20,8 @@ logging.config.dictConfig({
     'disable_existing_loggers': False,
     'formatters': {
         'basic': {
-            'format': '%(levelname)s %(asctime)s %(filename)s:%(lineno)d '
+            'format':
+            '%(levelname)s %(asctime)s %(filename)s:%(lineno)d '
             '%(message)s'
         },
     },
@@ -34,8 +35,8 @@ logging.config.dictConfig({
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'basic',
             'filename': 'log-mention.log',
-            'maxBytes': '10240',
-            'backupCount': '3',
+            'maxBytes': 10240,
+            'backupCount': 3
         }
     },
     'root': {
@@ -46,7 +47,6 @@ logging.config.dictConfig({
 
 logger = logging.getLogger(__name__)
 
-
 ## end logging setup
 from mention import gitlab_client
 from mention import mention_bot
@@ -56,6 +56,7 @@ from mention import helper
 app = Flask(__name__)
 _STOP_PROCESS = False
 enclosure_queue = Queue()
+
 
 @app.route('/check_health', methods=['GET'])
 def check_health():
@@ -85,17 +86,16 @@ def webhook():
 
 def _manage_payload(payload):
     logger.info('_' * 80)
-    logger.info(
-        'Received payload<{}>: {}'.format(
-            id(payload), helper.load_dict_as_yaml(payload)))
+    logger.info('Received payload<{}>: {}'.format(
+        id(payload), helper.load_dict_as_yaml(payload)))
     username = payload['user']['username']
     project_id = payload['object_attributes']['target_project_id']
     target_branch = payload['object_attributes']['target_branch']
     namespace = payload['object_attributes']['target']['path_with_namespace']
     merge_request_id = payload['object_attributes']['iid']
     # loading config
-    logger.info(
-        'Current Action={}'.format(payload['object_attributes']['action']))
+    logger.info('Current Action={}'.format(
+        payload['object_attributes']['action']))
     try:
         cfg = mention_bot.get_repo_config(project_id, target_branch,
                                           config.CONFIG_PATH)
@@ -111,7 +111,7 @@ def _manage_payload(payload):
                                     owners, cfg)
 
         if payload['object_attributes']['action'] in [
-            'open', 'reopen', 'closed', 'close', 'merge'
+                'open', 'reopen', 'closed', 'close', 'merge'
         ]:
             mention_bot.manage_labels(payload, project_id, merge_request_id,
                                       cfg, diff_files)
@@ -129,6 +129,7 @@ def _check_and_sleep(ts):
             logger.info('ts={}; now={}; sleeping for: {}'.format(
                 ts, now, should_wait))
             time.sleep(should_wait)
+
 
 def _payload_worker(q):
     # this worker is needed solely because sometimes the MR comes in too fast,
@@ -152,7 +153,7 @@ def _payload_worker(q):
 def main():
     config.check_config()
     # setup thread to handle the payloads
-    worker = Thread(target=_payload_worker, args=(enclosure_queue,))
+    worker = Thread(target=_payload_worker, args=(enclosure_queue, ))
     worker.setDaemon(True)
     worker.start()
 
@@ -165,4 +166,14 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(help='Startup Mode')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-listen', action='store_true', default=False)
+    group.add_argument('-quick-check', action='store_true', default=False)
+
+    args = parser.parse_args()
+    if args.listen:
+        main()
+    if args.quick_check:
+        mention_bot.check_merge_requests('p/higgs')

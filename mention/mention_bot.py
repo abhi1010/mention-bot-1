@@ -25,7 +25,7 @@ class BotConfig(object):
     def from_dict(cls, d):
         cfg = cls()
         attrs = dict(cls.default_config, **d)
-        for k, v in attrs.iteritems():
+        for k, v in attrs.items():
             setattr(cfg, k, v)
         return cfg
 
@@ -61,7 +61,7 @@ def parse_diff(changes):
         from_file = diff['old_path']
         lines = diff['diff'].split('\n')
         deleted_lines = parse_diff_file(reversed(lines))
-        files.append    ((from_file, deleted_lines))
+        files.append((from_file, deleted_lines))
     return files
 
 
@@ -156,37 +156,45 @@ def filter_files(files, fileBlacklist, numFilesToCheck):
 def get_files_blames(repo_namespace, target_branch, files):
     blames = {}
     for from_file, linenos in files:
-        blame = gitlab_client.fetch_blame(repo_namespace, target_branch, from_file)
+        blame = gitlab_client.fetch_blame(repo_namespace, target_branch,
+                                          from_file)
         logger.info('file={}; lines={}'.format(from_file, linenos))
         logger.info('blame.len={}; blame = {}'.format(
             len(blame),
             blame.encode('ascii', 'ignore').decode('ascii')))
         parsed_blame = parse_blame(blame)
         blames[from_file] = parsed_blame
-        logger.info('file: {}; parsed_blame={}'.format(from_file, parsed_blame))
+        logger.info('file: {}; parsed_blame={}'.format(from_file,
+                                                       parsed_blame))
     return blames
 
 
-def _manage_labels(payload, project_id, merge_request_id, cfg, diff_files):
-    labels = gitlab_client.get_labels(cfg,
-                                      diff_files) or gitlab_client.get_payload_labels(payload)
-
-    logger.info(
-        'labels={}; diff_files={}'.format(labels, gitlab_client.PP(diff_files)))
+def _set_labels(labels, diff_files, project_id, merge_request_id):
+    logger.info('labels={}; diff_files={}'.format(
+        labels, gitlab_client.PP(diff_files)))
     labels_in_str = ','.join(labels)
-    channels = gitlab_client.get_channels_based_on_labels(cfg, labels)
-    logger.info('channels={}'.format(channels))
-    text, msg = notify.create_slack_msg_short(payload, labels_in_str)
-    logger.info('slack msg={}'.format(msg))
-    notify.send_to_slack(text, msg, channels)
-    logger.info('msg sent to slack on channels: {}'.format(channels))
     if labels_in_str:
         gitlab_client.update_labels(project_id, merge_request_id, labels)
     logger.info('labels updated on gitlab MR')
 
 
+def _manage_labels(project_id, merge_request_id, cfg, diff_files, labels,
+                   username, action, iid, url, title):
+    _set_labels(labels, diff_files, project_id, merge_request_id)
+
+    channels = gitlab_client.get_channels_based_on_labels(cfg, labels)
+    logger.info('channels={}'.format(channels))
+
+    text, msg = get_slack_msg_short(labels, username, action, iid, url, title)
+
+    logger.info('slack msg={}'.format(msg))
+    notify.send_to_slack(text, msg, channels)
+    logger.info('msg sent to slack on channels: {}'.format(channels))
+
+
 def get_diff_files(project_id, merge_request_id):
-    changes = gitlab_client.get_merge_request_diff(project_id, merge_request_id)
+    changes = gitlab_client.get_merge_request_diff(project_id,
+                                                   merge_request_id)
     files = parse_diff(changes)
     if not files:
         logger.info('No files found. Changes were: {}'.format(changes))
@@ -194,7 +202,18 @@ def get_diff_files(project_id, merge_request_id):
 
 
 def manage_labels(payload, project_id, merge_request_id, cfg, diff_files):
-    _manage_labels(payload, project_id, merge_request_id, cfg, diff_files)
+    labels = gitlab_client.get_labels(
+        cfg, diff_files) or gitlab_client.get_payload_labels(payload)
+    username = payload['user']['username']
+
+    obj = payload['object_attributes']
+    action = obj['action']
+    iid = obj['iid']
+    url = obj['url']
+    title = obj['title']
+
+    _manage_labels(project_id, merge_request_id, cfg, diff_files, labels,
+                   username, action, iid, url, title)
 
 
 # IMP function
@@ -221,7 +240,8 @@ def add_comment(project_id, merge_request_id, creator, reviewers, cfg):
     if cfg.skipAlreadyMentionedMR and\
        gitlab_client.has_mention_comment(project_id, merge_request_id, note):
         return False
-    return gitlab_client.add_comment_merge_request(project_id, merge_request_id, note)
+    return gitlab_client.add_comment_merge_request(project_id,
+                                                   merge_request_id, note)
 
 
 def get_repo_config(project_id, target_branch, config_path):
@@ -241,6 +261,7 @@ def get_repo_config(project_id, target_branch, config_path):
         )
 
 
+# we expected payload here
 def is_valid(cfg, data):
     if data['object_attributes']['action'] not in cfg.actions:
         return False
@@ -248,6 +269,34 @@ def is_valid(cfg, data):
     if cfg.skipWIP and data['object_attributes']['work_in_progress']:
         return False
 
-    if cfg.skipAlreadyAssignedMR and 'assignee' not in data['object_attributes']:
+    if cfg.skipAlreadyAssignedMR and 'assignee' not in data[
+            'object_attributes']:
         return False
     return True
+
+
+def check_merge_requests(repo_name):
+    project = gitlab_client.get_project(repo_name)
+    project_id = project.attributes['id']
+    target_branch = 'master'
+
+    cfg = get_repo_config(project_id, target_branch, config.CONFIG_PATH)
+    all_mrs = project.mergerequests.list(state='opened', all=True)
+
+    unlabelled_mrs = list(
+        filter(lambda mr: not mr.attributes['labels'], all_mrs))
+
+    for mr in unlabelled_mrs:
+        logging.info(f'\n\nMR: {mr}')
+        mr_attrs = mr.attributes
+        merge_request_id = mr_attrs['iid']
+        diff_files = get_diff_files(project_id, merge_request_id)
+        labels = gitlab_client.get_labels(cfg, diff_files)
+        print(f' labels={labels}')
+        if labels:
+            # print(f'ABHI            Mr: {mr_attrs["id"]} ; labels={labels}')
+            _set_labels(labels, diff_files, project_id, merge_request_id)
+        else:
+            print(f'No Labels for MR: {mr_attrs}')
+
+    logging.info(f'total = {len(unlabelled_mrs)}')
