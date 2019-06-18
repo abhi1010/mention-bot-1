@@ -8,6 +8,7 @@ import datetime
 import math
 import time
 import argparse
+import copy
 
 from flask import Flask, request
 
@@ -45,7 +46,7 @@ _DICT_LOG_HOOK = {
     }
 }
 
-_DICT_LOG_CHECKS = _DICT_LOG_HOOK
+_DICT_LOG_CHECKS = copy(_DICT_LOG_HOOK)
 _DICT_LOG_CHECKS['handlers']['file'][
     'filename'] = '/tmp/mention-bot-checks.log'
 
