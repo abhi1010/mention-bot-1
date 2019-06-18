@@ -24,7 +24,7 @@ group.add_argument('-quick-check', action='store_true', default=False)
 
 args = parser.parse_args()
 
-dict_logging = {
+logging.config.dictConfig({
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
@@ -43,7 +43,8 @@ dict_logging = {
         'file': {
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'basic',
-            'filename': '/tmp/mention-bot-hook.log' if args.listen else '/tmp/mention-bot-checks.log',
+            'filename': '/tmp/mention-bot-hook.log'
+            if args.listen else '/tmp/mention-bot-checks.log',
             'maxBytes': 10240,
             'backupCount': 3
         }
@@ -52,9 +53,7 @@ dict_logging = {
         'level': 'INFO',
         'handlers': ['console', 'file']
     }
-}
-
-logging.config.dictConfig(dict_logging)
+})
 logger = logging.getLogger(__name__)
 
 ## end logging setup
@@ -109,11 +108,12 @@ def _manage_payload(payload):
     try:
         cfg = mention_bot.get_repo_config(project_id, target_branch,
                                           config.CONFIG_PATH)
-        diff_files = []
+
+        diff_files = mention_bot.get_diff_files(project_id, merge_request_id)
+        logging.info(
+            f'PiD: {project_id}, IID: {merge_request_id}; files={diff_files}')
 
         if mention_bot.is_valid(cfg, payload):
-            diff_files = mention_bot.get_diff_files(project_id,
-                                                    merge_request_id)
             owners = mention_bot.guess_owners_for_merge_reqeust(
                 project_id, namespace, target_branch, merge_request_id,
                 username, cfg, diff_files)
