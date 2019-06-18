@@ -16,7 +16,15 @@ from flask import Flask, request
 
 import logging.config
 
-_DICT_LOG_HOOK = {
+parser = argparse.ArgumentParser()
+subparsers = parser.add_subparsers(help='Startup Mode')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('-listen', action='store_true', default=False)
+group.add_argument('-quick-check', action='store_true', default=False)
+
+args = parser.parse_args()
+
+dict_logging = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
@@ -35,7 +43,7 @@ _DICT_LOG_HOOK = {
         'file': {
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'basic',
-            'filename': '/tmp/mention-bot-hook.log',
+            'filename': '/tmp/mention-bot-hook.log' if args.listen else '/tmp/mention-bot-checks.log',
             'maxBytes': 10240,
             'backupCount': 3
         }
@@ -46,10 +54,7 @@ _DICT_LOG_HOOK = {
     }
 }
 
-_DICT_LOG_CHECKS = copy(_DICT_LOG_HOOK)
-_DICT_LOG_CHECKS['handlers']['file'][
-    'filename'] = '/tmp/mention-bot-checks.log'
-
+logging.config.dictConfig(dict_logging)
 logger = logging.getLogger(__name__)
 
 ## end logging setup
@@ -171,16 +176,7 @@ def main():
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(help='Startup Mode')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('-listen', action='store_true', default=False)
-    group.add_argument('-quick-check', action='store_true', default=False)
-
-    args = parser.parse_args()
     if args.listen:
-        logging.config.dictConfig(_DICT_LOG_HOOK)
         main()
     if args.quick_check:
-        logging.config.dictConfig(_DICT_LOG_CHECKS)
         mention_bot.check_merge_requests('p/higgs')
