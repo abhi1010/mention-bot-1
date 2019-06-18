@@ -15,7 +15,7 @@ from flask import Flask, request
 
 import logging.config
 
-logging.config.dictConfig({
+_DICT_LOG_HOOK = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
@@ -34,7 +34,7 @@ logging.config.dictConfig({
         'file': {
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'basic',
-            'filename': '/tmp/log-mention.log',
+            'filename': '/tmp/mention-bot-hook.log',
             'maxBytes': 10240,
             'backupCount': 3
         }
@@ -43,7 +43,11 @@ logging.config.dictConfig({
         'level': 'INFO',
         'handlers': ['console', 'file']
     }
-})
+}
+
+_DICT_LOG_CHECKS = _DICT_LOG_HOOK
+_DICT_LOG_CHECKS['handlers']['file'][
+    'filename'] = '/tmp/mention-bot-checks.log'
 
 logger = logging.getLogger(__name__)
 
@@ -174,6 +178,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     if args.listen:
+        logging.config.dictConfig(_DICT_LOG_HOOK)
         main()
     if args.quick_check:
+        logging.config.dictConfig(_DICT_LOG_CHECKS)
         mention_bot.check_merge_requests('p/higgs')

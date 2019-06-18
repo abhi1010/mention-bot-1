@@ -185,7 +185,8 @@ def _manage_labels(project_id, merge_request_id, cfg, diff_files, labels,
     channels = gitlab_client.get_channels_based_on_labels(cfg, labels)
     logger.info('channels={}'.format(channels))
 
-    text, msg = get_slack_msg_short(labels, username, action, iid, url, title)
+    text, msg = notify.get_slack_msg_short(labels, username, action, iid, url,
+                                           title)
 
     logger.info('slack msg={}'.format(msg))
     notify.send_to_slack(text, msg, channels)
