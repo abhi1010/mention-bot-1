@@ -34,7 +34,7 @@ logging.config.dictConfig({
         'file': {
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'basic',
-            'filename': 'log-mention.log',
+            'filename': '/tmp/log-mention.log',
             'maxBytes': 10240,
             'backupCount': 3
         }

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cd /usr/local/mention-bot/mention-bot-lfyzjck/
+cd /usr/local/mention-bot/mention-bot-gitlab/
 
 source ve3/bin/activate
 
