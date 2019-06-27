@@ -116,6 +116,7 @@ def create_slack_msg_short(data, labels):
 
 
 def get_slack_msg_short(labels, username, action, iid, url, title):
+    labels_str = ', '.join([f'`{x}`' for x in labels if x])
     return _FMTS_SHORT.format(
         AUTHOR=username,
         STATUS=_STATUS_REPLACEMENTS[action]
@@ -123,4 +124,4 @@ def get_slack_msg_short(labels, username, action, iid, url, title):
         IID=iid,
         TITLE_LINK=url,
         TITLE=title,
-        LABELS='_({})_'.format(labels) if labels else ''), None
+        LABELS='_({})_'.format(labels_str) if labels_str else ''), None

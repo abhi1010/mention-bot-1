@@ -65,10 +65,17 @@ def get_gitlab_client():
     global _gitlab_client
     if _gitlab_client is None:
         logger.info('creating session first time')
-        _gitlab_client = Gitlab(GITLAB_URL,
+        if session:
+            logger.info(f'Using session: token={GITLAB_TOKEN}')
+            _gitlab_client = Gitlab(GITLAB_URL,
                                 api_version='4',
                                 private_token=GITLAB_TOKEN,
                                 session=session)
+        else:
+            logger.info(f'Not using session. Token={GITLAB_TOKEN}')
+            _gitlab_client = Gitlab(GITLAB_URL,
+                                api_version='4',
+                                private_token=GITLAB_TOKEN)
     return _gitlab_client
 
 
@@ -179,9 +186,17 @@ def _search_authenticity_token(html):
 
 
 def login():
+    '''
+    This does not work well at all. My account gets disabled all the times
+    source: https://gist.github.com/gpocentek/bd4c3fbf8a6ce226ebddc4aad6b46c0a
+
+    Maybe this will help: 
+    https://github.com/python-gitlab/python-gitlab/issues/513
+    '''
+    return
     global session
     SIGN_IN_URL = GITLAB_URL + '/users/sign_in'
-    LOGIN_URL = GITLAB_URL + '/users/sign_in'
+    LOGIN_URL = GITLAB_URL + '/users/auth/ldapmain/callback'
     if session:
         logger.info('session exists')
     else:
@@ -226,6 +241,8 @@ def setup_cookie():
 
 
 def fetch_blame(namespace, target_branch, path):
+    # Doesn't work. Why bother?
+    return ''
     setup_cookie()
     try:
         url = '%s/%s/blame/%s/%s' % (GITLAB_URL, namespace, target_branch,

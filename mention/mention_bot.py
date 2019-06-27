@@ -282,22 +282,26 @@ def check_merge_requests(repo_name):
     target_branch = 'master'
 
     cfg = get_repo_config(project_id, target_branch, config.CONFIG_PATH)
+    logger.info(f'pid={project_id}')
     all_mrs = project.mergerequests.list(state='opened', all=True)
+
+    logger.info(f'All MRs={all_mrs}')
+    logger.info(f'Looking for MRs without labels')
 
     unlabelled_mrs = list(
         filter(lambda mr: not mr.attributes['labels'], all_mrs))
 
     for mr in unlabelled_mrs:
-        logging.info(f'\n\nMR: {mr}')
+        logger.info(f'\n\nMR: {mr}')
         mr_attrs = mr.attributes
         merge_request_id = mr_attrs['iid']
         diff_files = get_diff_files(project_id, merge_request_id)
         labels = gitlab_client.get_labels(cfg, diff_files)
-        print(f' labels={labels}')
+        logger.info(f' labels={labels}')
         if labels:
-            # print(f'ABHI            Mr: {mr_attrs["id"]} ; labels={labels}')
+            logger.info(f'MR: {mr_attrs["id"]} ; labels={labels}')
             _set_labels(labels, diff_files, project_id, merge_request_id)
         else:
-            print(f'No Labels for MR: {mr_attrs}')
+            logger.info(f'No Labels for MR: {mr_attrs}')
 
-    logging.info(f'total = {len(unlabelled_mrs)}')
+    logger.info(f'total = {len(unlabelled_mrs)}')

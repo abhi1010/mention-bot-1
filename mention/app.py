@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
+import os
 import json
 import logging
 from queue import Queue, Empty
@@ -14,8 +15,6 @@ from flask import Flask, request
 
 ## setup logging
 
-import logging.config
-
 parser = argparse.ArgumentParser()
 subparsers = parser.add_subparsers(help='Startup Mode')
 group = parser.add_mutually_exclusive_group()
@@ -24,6 +23,7 @@ group.add_argument('-quick-check', action='store_true', default=False)
 
 args = parser.parse_args()
 
+import logging.config
 logging.config.dictConfig({
     'version': 1,
     'disable_existing_loggers': False,
@@ -45,8 +45,8 @@ logging.config.dictConfig({
             'formatter': 'basic',
             'filename': '/tmp/mention-bot-hook.log'
             if args.listen else '/tmp/mention-bot-checks.log',
-            'maxBytes': 10240,
-            'backupCount': 3
+            'maxBytes': 1024000,
+            'backupCount': 30
         }
     },
     'root': {
@@ -54,7 +54,7 @@ logging.config.dictConfig({
         'handlers': ['console', 'file']
     }
 })
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 ## end logging setup
 from mention import gitlab_client
@@ -117,8 +117,10 @@ def _manage_payload(payload):
             owners = mention_bot.guess_owners_for_merge_reqeust(
                 project_id, namespace, target_branch, merge_request_id,
                 username, cfg, diff_files)
-            mention_bot.add_comment(project_id, merge_request_id, username,
-                                    owners, cfg)
+            logging.info(f'owners = {owners}')
+            # We currently do not expect owners to work. So let's disable
+            # mention_bot.add_comment(project_id, merge_request_id, username,
+            #                         owners, cfg)
 
         if payload['object_attributes']['action'] in [
                 'open', 'reopen', 'closed', 'close', 'merge'
@@ -154,14 +156,16 @@ def _payload_worker(q):
             logger.info('Payload found: at ts={}; id={}'.format(
                 payload_ts, id(payload)))
             _check_and_sleep(payload_ts)
-            _manage_payload(payload)
+            try:
+              _manage_payload(payload)
+            except Exception as e:
+              logger.error(f'Exception with the message: {str(e)}')
             q.task_done()
         except Empty:
             pass
 
 
 def main():
-    config.check_config()
     # setup thread to handle the payloads
     worker = Thread(target=_payload_worker, args=(enclosure_queue, ))
     worker.setDaemon(True)
@@ -176,6 +180,8 @@ def main():
 
 
 if __name__ == '__main__':
+    logger.info(f'args = {args}...')
+    config.check_config()
     if args.listen:
         main()
     if args.quick_check:
