@@ -3,14 +3,14 @@
 from __future__ import absolute_import
 
 import mock
-import flask.ext.testing
+import flask_testing
 
 from mention.app import app
 from mention.mention_bot import BotConfig
 from mention.config import get_default_config
 
 
-class TestBot(flask.ext.testing.TestCase):
+class TestBot(flask_testing.TestCase):
     def create_app(self):
         app.config['TESTING'] = True
         return app

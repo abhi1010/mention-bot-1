@@ -21,7 +21,7 @@ group = parser.add_mutually_exclusive_group()
 group.add_argument('-listen', action='store_true', default=False)
 group.add_argument('-quick-check', action='store_true', default=False)
 
-args = parser.parse_args()
+args = parser.parse_args() if __name__ == '__main__' else None
 
 import logging.config
 logging.config.dictConfig({
@@ -44,8 +44,8 @@ logging.config.dictConfig({
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'basic',
             'filename': '/tmp/mention-bot-hook.log'
-            if args.listen else '/tmp/mention-bot-checks.log',
-            'maxBytes': 1024000,
+            if args and args.listen else '/tmp/mention-bot-checks.log',
+            'maxBytes': 100*1024*1024,
             'backupCount': 30
         }
     },
@@ -117,10 +117,12 @@ def _manage_payload(payload):
             owners = mention_bot.guess_owners_for_merge_reqeust(
                 project_id, namespace, target_branch, merge_request_id,
                 username, cfg, diff_files)
-            logging.info(f'owners = {owners}')
-            # We currently do not expect owners to work. So let's disable
-            # mention_bot.add_comment(project_id, merge_request_id, username,
-            #                         owners, cfg)
+            if owners:
+                logging.info(f'owners = {owners}; username={username}')
+                mention_bot.add_comment(project_id, merge_request_id, username,
+                                        owners, cfg)
+            else:
+                logging.info(f'No Owners found: PiD:{project_id}; MID:{merge_request_id}, username: {username}')
 
         if payload['object_attributes']['action'] in [
                 'open', 'reopen', 'closed', 'close', 'merge'
@@ -163,7 +165,6 @@ def _payload_worker(q):
             q.task_done()
         except Empty:
             pass
-
 
 def main():
     # setup thread to handle the payloads

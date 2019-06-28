@@ -56,7 +56,9 @@ def get_labels(cfg, files):
         for path, label in cfg.labels.items():
             if file.startswith(path):
                 labels_to_add.append(label)
-    return sorted([x for x in list(set(labels_to_add))])
+    labels_to_return = sorted([x for x in list(set(labels_to_add))])
+    logger.info(f'labels={labels_to_return}; files={files_to_use}')
+    return labels_to_return
 
 
 def get_gitlab_client():
@@ -68,14 +70,14 @@ def get_gitlab_client():
         if session:
             logger.info(f'Using session: token={GITLAB_TOKEN}')
             _gitlab_client = Gitlab(GITLAB_URL,
-                                api_version='4',
-                                private_token=GITLAB_TOKEN,
-                                session=session)
+                                    api_version='4',
+                                    private_token=GITLAB_TOKEN,
+                                    session=session)
         else:
             logger.info(f'Not using session. Token={GITLAB_TOKEN}')
             _gitlab_client = Gitlab(GITLAB_URL,
-                                api_version='4',
-                                private_token=GITLAB_TOKEN)
+                                    api_version='4',
+                                    private_token=GITLAB_TOKEN)
     return _gitlab_client
 
 
@@ -152,14 +154,8 @@ def get_merge_request_diff(project_id, merge_request_id):
             changes.append(diff.attributes[u'diffs'])
         # logger.info('diff = {}'.format(diff.attributes[u'diffs'][u'diff']))
     changes = list(chain(*changes))
-    logger.info('changes = {}'.format(changes))
+    # logger.info('changes = {}'.format(changes))
     return changes
-
-
-# def get_merge_request_diff(project_id, merge_request_id):
-#     client = get_gitlab_client()
-#     changes = client.getmergerequestchanges(project_id, merge_request_id)
-#     return changes['changes']
 
 
 def has_mention_comment(project_id, merge_request_id, comment):
@@ -187,13 +183,9 @@ def _search_authenticity_token(html):
 
 def login():
     '''
-    This does not work well at all. My account gets disabled all the times
     source: https://gist.github.com/gpocentek/bd4c3fbf8a6ce226ebddc4aad6b46c0a
-
-    Maybe this will help: 
-    https://github.com/python-gitlab/python-gitlab/issues/513
+    ... had bugs
     '''
-    return
     global session
     SIGN_IN_URL = GITLAB_URL + '/users/sign_in'
     LOGIN_URL = GITLAB_URL + '/users/auth/ldapmain/callback'
@@ -217,10 +209,12 @@ def login():
         logger.info('Unable to find the authenticity token')
         sys.exit(1)
     data = {
-        'user[login]': GITLAB_USERNAME,
-        'user[password]': GITLAB_PASSWORD,
+        'username': GITLAB_USERNAME,
+        'password': GITLAB_PASSWORD,
         'authenticity_token': token
     }
+    # this is one thing that lad this is one thing that lad this is one thing that lad this is one thing that lad this is one thing that lad this is one thing that lad this is one thing that lad
+
     r = session.post(LOGIN_URL, data=data)
     if r.status_code != 200:
         logger.info('Failed to log in with status: {}. content={}'.format(
@@ -241,17 +235,14 @@ def setup_cookie():
 
 
 def fetch_blame(namespace, target_branch, path):
-    # Doesn't work. Why bother?
-    return ''
     setup_cookie()
     try:
         url = '%s/%s/blame/%s/%s' % (GITLAB_URL, namespace, target_branch,
                                      path)
         logger.info('fetch_blame: locals={}'.format(locals()))
         response = session.get(url)
-        logger.info('response status={}; content={}'.format(
-            response.status_code, response.content))
+        logger.info(f'url={url}; response status={response.status_code}')
         response.raise_for_status()
     except requests.HTTPError:
         logger.warning("Fetch blame failed: {}".format(url))
-    return ''
+    return response.text

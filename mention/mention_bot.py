@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 RE_DIFF_LINE_NO = re.compile(r'\@\@ -(\d+),?(\d+)? \+(\d+),?(\d+)? \@\@')
 RE_BLAME_OR_NO = re.compile(
-    r'(<a class=.commit-author-link. *href="\/([\w\-0-9.]+)|<a class=.diff-line-num.)'
+    r'(<a class=.commit-author-link.*href=.\/([\w.\d]+)|<a class=.diff-line-num.)'
 )
 
 
@@ -169,18 +169,17 @@ def get_files_blames(repo_namespace, target_branch, files):
     return blames
 
 
-def _set_labels(labels, diff_files, project_id, merge_request_id):
-    logger.info('labels={}; diff_files={}'.format(
-        labels, gitlab_client.PP(diff_files)))
+def _set_labels(labels, project_id, merge_request_id):
+    logger.info(f'Setting labels={labels}')
     labels_in_str = ','.join(labels)
     if labels_in_str:
         gitlab_client.update_labels(project_id, merge_request_id, labels)
     logger.info('labels updated on gitlab MR')
 
 
-def _manage_labels(project_id, merge_request_id, cfg, diff_files, labels,
-                   username, action, iid, url, title):
-    _set_labels(labels, diff_files, project_id, merge_request_id)
+def _manage_labels(project_id, merge_request_id, cfg, labels, username, action,
+                   iid, url, title):
+    _set_labels(labels, project_id, merge_request_id)
 
     channels = gitlab_client.get_channels_based_on_labels(cfg, labels)
     logger.info('channels={}'.format(channels))
@@ -213,8 +212,8 @@ def manage_labels(payload, project_id, merge_request_id, cfg, diff_files):
     url = obj['url']
     title = obj['title']
 
-    _manage_labels(project_id, merge_request_id, cfg, diff_files, labels,
-                   username, action, iid, url, title)
+    _manage_labels(project_id, merge_request_id, cfg, labels, username, action,
+                   iid, url, title)
 
 
 # IMP function
@@ -297,10 +296,9 @@ def check_merge_requests(repo_name):
         merge_request_id = mr_attrs['iid']
         diff_files = get_diff_files(project_id, merge_request_id)
         labels = gitlab_client.get_labels(cfg, diff_files)
-        logger.info(f' labels={labels}')
         if labels:
             logger.info(f'MR: {mr_attrs["id"]} ; labels={labels}')
-            _set_labels(labels, diff_files, project_id, merge_request_id)
+            _set_labels(labels, project_id, merge_request_id)
         else:
             logger.info(f'No Labels for MR: {mr_attrs}')
 
