@@ -298,7 +298,14 @@ def check_merge_requests(repo_name):
         labels = gitlab_client.get_labels(cfg, diff_files)
         if labels:
             logger.info(f'MR: {mr_attrs["id"]} ; labels={labels}')
-            _set_labels(labels, project_id, merge_request_id)
+            username = mr_attrs['author']['username']
+            action = 'labelled'
+            url = mr_attrs['web_url']
+            title = mr_attrs['title']
+            logger.info('Managing MR with the folloging details: '
+                        f'user={username}; url={url}; title={title}')
+            _manage_labels(project_id, merge_request_id, cfg, labels, username,
+                           action, merge_request_id, url, title)
         else:
             logger.info(f'No Labels for MR: {mr_attrs}')
 
