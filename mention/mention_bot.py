@@ -3,12 +3,14 @@
 import re
 import json
 import logging
+import datetime
 from collections import defaultdict
 from fnmatch import fnmatch
 
 from mention import notify
 from mention import config
 from mention import gitlab_client
+from mention import helper
 
 logger = logging.getLogger(__name__)
 
@@ -279,6 +281,7 @@ def check_merge_requests(repo_name):
     project = gitlab_client.get_project(repo_name)
     project_id = project.attributes['id']
     target_branch = 'master'
+    one_min = datetime.timedelta(minutes=1)
 
     cfg = get_repo_config(project_id, target_branch, config.CONFIG_PATH)
     logger.info(f'pid={project_id}')
@@ -294,6 +297,12 @@ def check_merge_requests(repo_name):
         logger.info(f'\n\nMR: {mr}')
         mr_attrs = mr.attributes
         merge_request_id = mr_attrs['iid']
+        created_at = mr.attributes['created_at']
+        created_dt = helper.parse_str_into_date(created_at)
+        mr_atleast_one_min_old = helper.is_dt_gt_given_dt(created_dt, one_min, datetime.datetime.now())
+        if not mr_atleast_one_min_old:
+            logger.info(f'MR was just created: created_at={created_at}; created_dt={created_dt}')
+            continue
         diff_files = get_diff_files(project_id, merge_request_id)
         labels = gitlab_client.get_labels(cfg, diff_files)
         if labels:

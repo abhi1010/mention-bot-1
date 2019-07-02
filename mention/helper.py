@@ -46,3 +46,20 @@ def save_as_yaml(dictionary, file_name):
         yaml.dump(
             dictionary, outfile, default_flow_style=False, allow_unicode=True)
 
+
+def parse_str_into_date(date_str):
+    dt = datetime.datetime.strptime(date_str[:-10], _DATE_FMT)
+    return dt
+
+
+def is_dt_gt_given_dt(date1, timedelta_offset, date2):
+    date1_with_offset = date1 + timedelta_offset
+    return date1_with_offset < date2
+
+
+def is_older_than_given_days(d_atts: dict, commit_date_str: str, days: int):
+    delta_days = datetime.timedelta(days=days)
+    dt = parse_str_into_date(commit_date_str)
+    d_atts.update({'DATE': dt})
+    return is_dt_gt_given_dt(dt, delta_days, datetime.datetime.now())
+
